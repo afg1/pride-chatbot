@@ -59,7 +59,7 @@ def get_similar_answer(vector, query):
         return result
 
 #load the database according to uuid
-vector = vector_by_id("ffa81ec8-3baf-41eb-9d9c-7ab0222cad05")
+vector = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad369")
 #create an instance of the Flask class
 app = Flask(__name__)
 #allowing cross-origin requests to access API endpoints. 
