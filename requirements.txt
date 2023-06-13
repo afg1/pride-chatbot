@@ -1,0 +1,7 @@
+chromadb
+click
+Flask
+hnswlib
+langchain
+torch
+transformers
