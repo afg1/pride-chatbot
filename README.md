@@ -1,5 +1,5 @@
 # pride-chat-bot
-This the chatbot for Pride Team.
+This is the chatbot for Pride Team.
 ## Introduction
 ### Data preparation
 - We need to create the embedding data according to our training target. In pride, we currently use the document in the [help page](https://www.ebi.ac.uk/pride/markdownpage/documentationpage)  for the training target. This embedding data will be stored in the server as files.
@@ -14,7 +14,7 @@ This the chatbot for Pride Team.
 
 The template is like below: 
 
-```python
+```
 You should summerize the knowledge and provide concise answer.
 Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
 If you does not know the answer to a question, please say I don’t know.
@@ -22,7 +22,11 @@ If you does not know the answer to a question, please say I don’t know.
 ###Question:{question}
 ```
 
-The `question` part in the template is from user input. The `knowledge` part is from first four most similar string in the vector database. At last, we will send this `tempalte` into LLM and it will give us a summary which will be the answer for the users' question.
+The `question` part in the template is from user input. 
+
+The `knowledge` part is from first four most similar string in the vector database. 
+
+At last, we will send this `tempalte` into LLM and it will give us a summary which will be the answer for the users' question.
 
 ![Flow Chart](https://github.com/PRIDE-Archive/pride-chatbot/blob/main/flowchart.jpeg) 
 
