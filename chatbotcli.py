@@ -97,18 +97,22 @@ def main():
             continue
         count = 0
         prompt = get_similar_answer(vector, query)
-        for response, history in model.stream_chat(prompt, query, history=history):
-            if stop_stream:
-                stop_stream = False
-                break
-            else:
-                count += 1
-                if count % 8 == 0:
-                    os.system(clear_command)
-                    print(build_prompt(history), flush=True)
-                    signal.signal(signal.SIGINT, signal_handler)
-        os.system(clear_command)
-        print(build_prompt(history), flush=True)
+        result = model.chat(tokenizer=tokenizer, input=prompt, history=history)
+        print(result)
+
+
+        # for response, history in result:
+        #     if stop_stream:
+        #         stop_stream = False
+        #         break
+        #     else:
+        #         count += 1
+        #         if count % 8 == 0:
+        #             os.system(clear_command)
+        #             print(build_prompt(history), flush=True)
+        #             signal.signal(signal.SIGINT, signal_handler)
+        # os.system(clear_command)
+        # print(build_prompt(history), flush=True)
 
 
 # main function
