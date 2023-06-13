@@ -97,9 +97,7 @@ def main():
             continue
         count = 0
         prompt = get_similar_answer(vector, query)
-        result = model.chat(tokenizer=tokenizer, input=prompt, history=[])
-
-        for response, history in result:
+        for response, history in model.stream_chat(prompt, query, history=history):
             if stop_stream:
                 stop_stream = False
                 break
