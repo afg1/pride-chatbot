@@ -1,6 +1,6 @@
 # import KonwledgeBaseQa  # class for search knowledge in database
+import platform
 import signal
-from sys import platform
 
 from langchain.chains import LLMChain  # A tool which use LLM in langchain
 from langchain.llms import HuggingFacePipeline  # a tool load model in huggingface by pipline（vicuna）
