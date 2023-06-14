@@ -1,48 +1,61 @@
-# import KonwledgeBaseQa  # class for search knowledge in database
+
 import platform
-import signal
 
-from langchain.chains import LLMChain  # A tool which use LLM in langchain
-from langchain.llms import HuggingFacePipeline  # a tool load model in huggingface by pipline（vicuna）
-from langchain.embeddings import HuggingFaceEmbeddings, \
-    SentenceTransformerEmbeddings  # Use to load the embedding model in hugginface
+import yaml
+from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbeddings  # Use to load the embedding model in hugginface
 from langchain.vectorstores import Chroma  # A tool that converts documents into vectors and can store and read them
-from langchain.docstore.document import \
-    Document  # a function use to change chunk of the document into a format acceptable to chroma
 from langchain.prompts import PromptTemplate  # Tool for generating prompts
-# from langchain.memory import ConversationBufferMemory  #tool for loading conversation history in prompt
-# from langchain.chains import ConversationalRetrievalChain #tool for loading conversation history in prompt
-from flask import Flask, request, jsonify  # flask is a web server framework
-from flask_cors import CORS  # allow cross domain request
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel  # tool for loading model from huggingface
-import os  # operating system
+import os
 
-os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
+# Variables initialization
+os_name = platform.system()
+clear_command = 'cls' if os_name == 'Windows' else 'clear'
+stop_stream = False
 
-# Load the Tokenizer, convert the text input into an input that the model can accept
-tokenizer = AutoTokenizer.from_pretrained("/hps/nobackup/juan/pride/chatbot/chatglm-6b", trust_remote_code=True)
-# Load the model, load it to the GPU in half-precision mode
-model = AutoModel.from_pretrained("/hps/nobackup/juan/pride/chatbot/chatglm-6b", trust_remote_code=True).half().cuda()
+
+def llm_model_init(model_path: str, gpu: bool) -> (AutoTokenizer, AutoModel):
+    """
+    Init model and tokenizer from provided path
+    :param gpu: If use gpu to load model
+    :param model_path: model path
+    :return: tokenizer, model
+    """
+    os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
+
+    abs_path = os.path.abspath(model_path)
+
+    # Load the Tokenizer, convert the text input into an input that the model can accept
+    tokenizer = AutoTokenizer.from_pretrained(abs_path, trust_remote_code=True)
+
+    # Load the model, load it to the GPU in half-precision mode
+    if gpu:
+        model = AutoModel.from_pretrained(model_path,trust_remote_code=True).half().cuda()
+    else:
+        model = AutoModel.from_pretrained(model_path, trust_remote_code=True).half()
+
+    return tokenizer, model
 
 
 # Load the specified private database (vector) by specifying the id
-def vector_by_id(path_id: str):
+def vector_by_id(path_id: str, model_path: str) -> Chroma:
     # Set the path of the database
     directory = "./vector/" + path_id
+    abs_path = os.path.abspath(model_path)
     # Load private knowledge base, uses embedding model named sentence-transformers
-    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(
-        model_name="/hps/nobackup/juan/pride/chatbot/all-MiniLM-L6-v2"))
+    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name=abs_path))
     return vector
 
-# According to the query entered by the user, retrieve relevant documents in the private database (vector), and generate a complete prompt
-def get_similar_answer(vector, query):
+# According to the query entered by the user, retrieve relevant documents in the private database (vector),
+# and generate a complete prompt
+def get_similar_answer(vector, query) -> str:
     # prompt template, you can add external strings to { }
     prompt_template = """
         You are a professional chat robot. Please answer the questions according to the following Knowledge, and please convert the language of the generated answer to the same language as the user
         ###Knowledge:{context}
         ###Question:{question}
         """
-    # create prompt，assign variable that can be add from other str。
+    # create prompt，assign variable that can be added from other str。
     # question：input from user。
     # context：knowledge search in the database according to the question from user
     prompt = PromptTemplate(
@@ -63,15 +76,7 @@ def get_similar_answer(vector, query):
     return result
 
 
-# load the database according to uuid
-vector = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad369")
-# create an instance of the Flask class
-
-os_name = platform.system()
-clear_command = 'cls' if os_name == 'Windows' else 'clear'
-stop_stream = False
-
-def build_prompt(history):
+def build_prompt(history: list) -> str:
     prompt = "PRIDE ChatGLM-6B，clear to Clean the history, stop to exit the program"
     for query, response in history:
         prompt += f"\n\nQuery：{query}"
@@ -82,7 +87,8 @@ def signal_handler(signal, frame):
     global stop_stream
     stop_stream = True
 
-def main():
+
+def main(model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
     history = []
     global stop_stream
     print("PRIDE ChatGLM-6B，clear to Clean the history, stop to exit the program")
@@ -117,4 +123,10 @@ def main():
 
 # main function
 if __name__ == '__main__':
-    main()
+    with open("config.yml", "r") as ymlfile:
+        cfg = yaml.load(ymlfile, Loader=yaml.Loader)
+    for llm in cfg:
+        print(llm)
+    tokenizer, model = llm_model_init(cfg['llm']['model_path'], cfg['llm']['gpu'])
+    vector = vector_by_id(cfg['vector']['uui'], cfg['vector']['model_path'])
+    main(model, tokenizer) # call main function
