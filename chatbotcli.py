@@ -120,7 +120,6 @@ def main(model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
         # os.system(clear_command)
         # print(build_prompt(history), flush=True)
 
-
 # main function
 if __name__ == '__main__':
     with open("config.yml", "r") as ymlfile:
