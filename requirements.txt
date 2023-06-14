@@ -5,3 +5,4 @@ hnswlib
 langchain
 torch
 transformers
+transformers[sentencepiece]
