@@ -1,0 +1,19 @@
+# You can use this file to create a conda environment for this pipeline:
+#   conda env create -f environment.yml
+name: chatbot
+channels:
+  - openms
+  - conda-forge
+  - bioconda
+dependencies:
+  - transformers==4.27.1
+  - pip:
+     - protobuf
+     - transformers==4.27.1
+     - cpm_kernels
+     - torch>=1.10
+     - gradio
+     - mdtex2html
+     - sentencepiece
+     - accelerate
+
