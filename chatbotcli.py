@@ -32,7 +32,8 @@ def llm_model_init(model_path: str, gpu: bool) -> (AutoTokenizer, AutoModel):
     if gpu:
         model = AutoModel.from_pretrained(model_path,trust_remote_code=True).half().cuda()
     else:
-        model = AutoModel.from_pretrained(model_path, trust_remote_code=True).half()
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+        model = AutoModel.from_pretrained(model_path, trust_remote_code=True).cpu().float()
 
     return tokenizer, model
 
@@ -127,5 +128,5 @@ if __name__ == '__main__':
     for llm in cfg:
         print(llm)
     tokenizer, model = llm_model_init(cfg['llm']['model_path'], cfg['llm']['gpu'])
-    vector = vector_by_id(cfg['vector']['uui'], cfg['vector']['model_path'])
+    vector = vector_by_id(cfg['vector']['uui'], cfg['llm']['model_path'])
     main(model, tokenizer) # call main function
