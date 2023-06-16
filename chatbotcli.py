@@ -124,6 +124,8 @@ def main(model, tokenizer):
 if __name__ == '__main__':
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
+    for llm in cfg:
+        print(llm)
     tokenizer, model = llm_model_init(cfg['llm']['model'], cfg['llm']['gpu'])
-    vector = vector_by_id(cfg['vector']['uui'], cfg['llm']['model'])
+    vector = vector_by_id(cfg['vector']['uui'],cfg['llm']['embedding'])
     main(model, tokenizer) # call main function

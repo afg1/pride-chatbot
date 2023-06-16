@@ -1,6 +1,7 @@
 llm:
     model: /Users/yperez/work/pride-chatbot/models/THUDM/chatglm-6b
     gpu: False
+    embedding: all-MiniLM-L6-v2
 vector:
     uui: d4a1cccb-a9ae-43d1-8f1f-9919c90ad369
     chunk_size: 500
