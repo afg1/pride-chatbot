@@ -31,6 +31,7 @@ CHROMA_SETTINGS = Settings(
         chroma_db_impl='duckdb+parquet',
         anonymized_telemetry=False
 )
+os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
 
 # Custom document loaders
 class MyElmLoader(UnstructuredEmailLoader):
