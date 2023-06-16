@@ -101,8 +101,8 @@ def main(model, tokenizer):
             print("PRIDE ChatGLM-6B，clear to Clean the history, stop to exit the program")
             continue
         prompt = get_similar_answer(vector, query)
-        result = model.chat(tokenizer, prompt, history=history)
-        print(result)
+        response, history = model.chat(tokenizer, prompt, history=history)
+        print(response)
 
 
         # for response, history in result:
