@@ -1,6 +1,8 @@
 llm:
-    model_path: THUDM/chatglm-6b
-    gpu: False
     model: THUDM/chatglm-6b
+    gpu: True
 vector:
     uui: d4a1cccb-a9ae-43d1-8f1f-9919c90ad369
+    chunk_size: 500
+    chunk_overlap: 50
+    path: ./vector/

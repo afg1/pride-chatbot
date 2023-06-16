@@ -5,43 +5,45 @@ import yaml
 from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbeddings  # Use to load the embedding model in hugginface
 from langchain.vectorstores import Chroma  # A tool that converts documents into vectors and can store and read them
 from langchain.prompts import PromptTemplate  # Tool for generating prompts
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel  # tool for loading model from huggingface
+from transformers import AutoTokenizer, AutoModel  # tool for loading model from huggingface
 import os
 
 # Variables initialization
 os_name = platform.system()
 clear_command = 'cls' if os_name == 'Windows' else 'clear'
 stop_stream = False
+os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
 
-
-def llm_model_init(model_path: str, gpu: bool) -> (AutoTokenizer, AutoModel):
+def llm_model_init(model: str, gpu: bool) -> (AutoTokenizer, AutoModel):
     """
     Init model and tokenizer from provided path
     :param gpu: If use gpu to load model
     :param model_path: model path
     :return: tokenizer, model
     """
-    os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
+
 
     # Load the Tokenizer, convert the text input into an input that the model can accept
-    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
 
     # Load the model, load it to the GPU in half-precision mode
     if gpu:
-        model = AutoModel.from_pretrained(model_path,trust_remote_code=True).half().cuda()
+        model = AutoModel.from_pretrained(model,trust_remote_code=True).half().cuda()
     else:
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-        model = AutoModel.from_pretrained(model_path, trust_remote_code=True).cpu().float()
+        model = AutoModel.from_pretrained(model, trust_remote_code=True).cpu().float()
 
     return tokenizer, model
 
 
 # Load the specified private database (vector) by specifying the id
-def vector_by_id(path_id: str, model_path: str) -> Chroma:
+def vector_by_id(path_id: str, model: str) -> Chroma:
     # Set the path of the database
-    directory = "./vector/" + path_id
+    directory = "./vector_store/" + path_id
+    isExist = os.path.exists(directory)
+    print("Vector database {} exist: {}".format(directory, isExist))
     # Load private knowledge base, uses embedding model named sentence-transformers
-    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name=model_path))
+    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name=model))
     return vector
 
 # According to the query entered by the user, retrieve relevant documents in the private database (vector),
@@ -86,7 +88,7 @@ def signal_handler(signal, frame):
     stop_stream = True
 
 
-def main(model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
+def main(model, tokenizer):
     history = []
     global stop_stream
     print("PRIDE ChatGLM-6B，clear to Clean the history, stop to exit the program")
