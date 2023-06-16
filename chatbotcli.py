@@ -51,11 +51,11 @@ def vector_by_id(path_id: str, model: str) -> Chroma:
 def get_similar_answer(vector, query) -> str:
     # prompt template, you can add external strings to { }
     prompt_template = """
-        You are a professional chat robot. Please answer the questions according to the following Knowledge, and please convert the language of the generated answer to the same language as the user
-        ###Knowledge:{context}
-        ###Question:{question}
-        """
-    # create prompt，assign variable that can be added from other str。
+    You are a professional chat robot. Please answer the questions according to the following Knowledge, and please convert the language of the generated answer to the same language as the user
+    ###Knowledge:{context}
+    ###Question:{question}
+    """
+    # create prompt，assign variable that can be add from other str。
     # question：input from user。
     # context：knowledge search in the database according to the question from user
     prompt = PromptTemplate(
