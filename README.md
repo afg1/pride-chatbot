@@ -4,7 +4,25 @@ This is the chatbot for Pride Team.
 ### Data preparation
 - We need to create the embedding data according to our training target. In pride, we currently use the document in the [help page](https://www.ebi.ac.uk/pride/markdownpage/documentationpage)  for the training target. This embedding data will be stored in the server as files.
 
-- The embedding priciple is that we split the documents in the `help page` by the `subtitle`. Therefore, each page will normally be divided into several segments. Each segment is the `string` format, then we will convert the `string` format to `document` format which could be accepted by the vector database like `Chroma`. We use `Sentence Transformer` to finish this step. In the end, we use the `api` in `Chorma` to save all these `document` into the vector database for future usage.
+- The embedding priciple is that we split the documents in the `help page` by the `subtitle`. Therefore, each page will normally be divided into several segments. Each segment is the `string` format, then we will convert the `string` format to `document` format which could be accepted by the vector database like `Chroma`. We use `Sentence Transformer` to finish this step。
+
+- In the end, we use the `api` in `Chorma` to save all these `document` into the vector database for future usage.
+
+-  The specific (embedding) model for this step is called `all-MiniLM-L6-v2` and we need to load this model in this way below.
+```python
+#Load the specified private database (vector) by specifying the id
+def vector_by_id(path_id: str):
+    #Set the path of the database
+    directory = "./vector/" + path_id
+    #Load private knowledge base, uses embedding model named sentence-transformers
+    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name="/hps/nobackup/juan/pride/chatbot/all-MiniLM-L6-v2"))
+    return vector
+```
+- If we do not install `all-MiniLM-L6-v2` to the local machine, we could load the remote model by this way below. Only put the specific name as the `model_name`.
+
+```python
+ vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"))
+```
 
 ### Chat
 
@@ -27,6 +45,17 @@ The `question` part in the template is from user input.
 The `knowledge` part is from first four most similar string in the vector database. 
 
 At last, we will send this `tempalte` into LLM and it will give us a summary which will be the answer for the users' question.
+
+-  The specific (LLM) model for this step is called `chatglm-6b` and we need to load this model in this way below.
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer,AutoModel  # tool for loading model from huggingface 
+
+#Load the Tokenizer, convert the text input into an input that the model can accept
+tokenizer = AutoTokenizer.from_pretrained("/hps/nobackup/juan/pride/chatbot/chatglm-6b", trust_remote_code=True)
+#Load the model, load it to the GPU in half-precision mode
+model = AutoModel.from_pretrained("/hps/nobackup/juan/pride/chatbot/chatglm-6b", trust_remote_code=True).half().cuda()
+```
 
 ![Flow Chart](https://github.com/PRIDE-Archive/pride-chatbot/blob/main/flowchart.jpeg) 
 
