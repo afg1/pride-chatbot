@@ -23,10 +23,8 @@ def llm_model_init(model_path: str, gpu: bool) -> (AutoTokenizer, AutoModel):
     """
     os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
 
-    abs_path = os.path.abspath(model_path)
-
     # Load the Tokenizer, convert the text input into an input that the model can accept
-    tokenizer = AutoTokenizer.from_pretrained(abs_path, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
 
     # Load the model, load it to the GPU in half-precision mode
     if gpu:
@@ -42,9 +40,8 @@ def llm_model_init(model_path: str, gpu: bool) -> (AutoTokenizer, AutoModel):
 def vector_by_id(path_id: str, model_path: str) -> Chroma:
     # Set the path of the database
     directory = "./vector/" + path_id
-    abs_path = os.path.abspath(model_path)
     # Load private knowledge base, uses embedding model named sentence-transformers
-    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name=abs_path))
+    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name=model_path))
     return vector
 
 # According to the query entered by the user, retrieve relevant documents in the private database (vector),
@@ -127,6 +124,6 @@ if __name__ == '__main__':
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     for llm in cfg:
         print(llm)
-    tokenizer, model = llm_model_init(cfg['llm']['model_path'], cfg['llm']['gpu'])
-    vector = vector_by_id(cfg['vector']['uui'], cfg['llm']['model_path'])
+    tokenizer, model = llm_model_init(cfg['llm']['model'], cfg['llm']['gpu'])
+    vector = vector_by_id(cfg['vector']['uui'], cfg['llm']['model'])
     main(model, tokenizer) # call main function
