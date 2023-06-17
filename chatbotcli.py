@@ -51,7 +51,6 @@ def vector_by_id(path_id: str, model: str) -> Chroma:
 def get_similar_answer(vector, query) -> str:
     # prompt template, you can add external strings to { }
     prompt_template = """
-    You are a professional chat robot. Please answer the questions according to the following Knowledge, and please convert the language of the generated answer to the same language as the user
     ###Knowledge:{context}
     ###Question:{question}
     """
@@ -101,10 +100,9 @@ def main(model, tokenizer):
             os.system(clear_command)
             print("PRIDE ChatGLM-6B，clear to Clean the history, stop to exit the program")
             continue
-        count = 0
         prompt = get_similar_answer(vector, query)
-        result = model.chat(tokenizer=tokenizer, input=prompt, history=history)
-        print(result)
+        response, history = model.chat(tokenizer, prompt, history=history)
+        print(response)
 
 
         # for response, history in result:
