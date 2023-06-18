@@ -104,20 +104,6 @@ def main(model, tokenizer):
         response, history = model.chat(tokenizer, prompt, history=history)
         print(response)
 
-
-        # for response, history in result:
-        #     if stop_stream:
-        #         stop_stream = False
-        #         break
-        #     else:
-        #         count += 1
-        #         if count % 8 == 0:
-        #             os.system(clear_command)
-        #             print(build_prompt(history), flush=True)
-        #             signal.signal(signal.SIGINT, signal_handler)
-        # os.system(clear_command)
-        # print(build_prompt(history), flush=True)
-
 # main function
 if __name__ == '__main__':
     with open("config.yml", "r") as ymlfile:

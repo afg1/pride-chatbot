@@ -15,9 +15,9 @@ os.environ["TOKENIZERS_PARALLELISM"] = "ture"  #Load the environment variables r
 
 
 #Load the Tokenizer, convert the text input into an input that the model can accept
-tokenizer = AutoTokenizer.from_pretrained("/hps/nobackup/juan/pride/chatbot/chatglm-6b", trust_remote_code=True)
+tokenizer = AutoTokenizer.from_pretrained("/Users/yperez/work/pride-chatbot/models/THUDM/chatglm-6b", trust_remote_code=True)
 #Load the model, load it to the GPU in half-precision mode
-model = AutoModel.from_pretrained("/hps/nobackup/juan/pride/chatbot/chatglm-6b", trust_remote_code=True).half().cuda()  
+model = AutoModel.from_pretrained("/Users/yperez/work/pride-chatbot/models/THUDM/chatglm-6b", trust_remote_code=True).float()
 
 
 
@@ -26,7 +26,7 @@ def vector_by_id(path_id: str):
     #Set the path of the database
     directory = "./vector/" + path_id
     #Load private knowledge base, uses embedding model named sentence-transformers
-    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name="/hps/nobackup/juan/pride/chatbot/all-MiniLM-L6-v2"))
+    vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"))
     return vector
 
 #According to the query entered by the user, retrieve relevant documents in the private database (vector), and generate a complete prompt
