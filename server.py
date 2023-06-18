@@ -24,7 +24,7 @@ model = AutoModel.from_pretrained("/Users/yperez/work/pride-chatbot/models/THUDM
 #Load the specified private database (vector) by specifying the id
 def vector_by_id(path_id: str):
     #Set the path of the database
-    directory = "./vector/" + path_id
+    directory = "./vector_store/" + path_id
     #Load private knowledge base, uses embedding model named sentence-transformers
     vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"))
     return vector
