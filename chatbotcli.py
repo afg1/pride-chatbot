@@ -37,9 +37,9 @@ def llm_model_init(model: str, gpu: bool) -> (AutoTokenizer, AutoModel):
 
 
 # Load the specified private database (vector) by specifying the id
-def vector_by_id(path_id: str, model: str) -> Chroma:
+def vector_by_id(database_path: str, model: str) -> Chroma:
     # Set the path of the database
-    directory = "./vector_store/" + path_id
+    directory = database_path
     isExist = os.path.exists(directory)
     print("Vector database {} exist: {}".format(directory, isExist))
     # Load private knowledge base, uses embedding model named sentence-transformers
@@ -66,7 +66,7 @@ def get_similar_answer(vector, query) -> str:
     retriever = vector.as_retriever(search_kwargs={"k": 3})
 
     # Searching in the database according to input from user,Returns relevant document and similarity score
-    docs = retriever.get_relevant_documents(query=query)
+    docs = retriever.get_relevant_doxcuments(query=query)
     # put the relevant document into context
     context = [d.page_content for d in docs]
 
@@ -111,5 +111,6 @@ if __name__ == '__main__':
     for llm in cfg:
         print(llm)
     tokenizer, model = llm_model_init(cfg['llm']['model'], cfg['llm']['gpu'])
-    vector = vector_by_id(cfg['vector']['uui'],cfg['llm']['embedding'])
+    database_path = cfg['vector']['cli_store'] + cfg['vector']['uui'] + "/"
+    vector = vector_by_id(database_path=database_path,model=cfg['llm']['embedding'])
     main(model, tokenizer) # call main function

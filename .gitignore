@@ -2,4 +2,5 @@
 /models/sentence-transformers/
 /models/THUDM/
 .idea/
+.uuid
 
