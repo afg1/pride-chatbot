@@ -1,5 +1,5 @@
 llm:
-    model: /homes/yperez/pride-chatbot/models/THUDM/chatglm-6b
+    model: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/chatglm-6b
     gpu: False
     embedding: all-MiniLM-L6-v2
 vector:

@@ -12,6 +12,8 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.docstore.document import Document
 
+os.environ["NLTK_DATA"] = '/hps/nobackup/juan/pride/chatbot/'
+
 from langchain.document_loaders import (
     CSVLoader,
     EverNoteLoader,
@@ -29,7 +31,8 @@ from langchain.document_loaders import (
 # Define the Chroma settings
 CHROMA_SETTINGS = Settings(
         chroma_db_impl='duckdb+parquet',
-        anonymized_telemetry=False
+        anonymized_telemetry=False, 
+        persist_directory="",
 )
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
 
@@ -155,6 +158,7 @@ def main(embeddings_model_name: str, persist_directory: str):
         print("Creating new vectorstore")
         texts = process_documents()
         print(f"Creating embeddings. May take some minutes...")
+        CHROMA_SETTINGS.persist_directory = persist_directory
         db = Chroma.from_documents(texts, embeddings, persist_directory=persist_directory,
                                    client_settings=CHROMA_SETTINGS)
     db.persist()

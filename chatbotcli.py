@@ -66,7 +66,7 @@ def get_similar_answer(vector, query) -> str:
     retriever = vector.as_retriever(search_kwargs={"k": 3})
 
     # Searching in the database according to input from user,Returns relevant document and similarity score
-    docs = retriever.get_relevant_doxcuments(query=query)
+    docs = retriever.get_relevant_documents(query=query)
     # put the relevant document into context
     context = [d.page_content for d in docs]
 
