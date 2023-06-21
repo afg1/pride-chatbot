@@ -90,3 +90,34 @@ vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbed
 ```
 python3 main.py
 ```
+
+# How to get Embedding Data
+
+- Upload markdown files
+  
+Currently, we only use the `markdown` files from the [help page](https://github.com/PRIDE-Archive/pride-web/tree/master/public/markdown) as the source of the vecter database. In the future, we could add more data and also support other file format like `pdf`.
+
+- Text Split
+  
+We will devide each of the markdown files into many segmentations based on four types of symbol `#`,`##`,`###`,`####`. More specifically, we start the segmentation when any one type of the symbols `#`,`##`,`###`,`####` shows up in one markdown file and will not finish until next symbol occurs. 
+Here is the segmentation example of the [submit data page](https://www.ebi.ac.uk/pride/markdownpage/submitdatapage).
+
+![Segmentation Demo](https://github.com/PRIDE-Archive/pride-chatbot/blob/main/segmentation_demo.png) 
+
+>How to create most effective database is a very important topic. It will impact the performance directly to the LLM answers. All these data should be prepared by the experienced person in Pride who knows the deep meaning of the data so that the chatbot could do a good job.
+
+- Vector format convert
+  
+All the above segmentations are `string` paragraph, we will convert these `string` format to the `document` format like decoding, which will be accepted by the vector database `Chroma`.
+
+- Store vectors in Chroma
+  
+We will store all the `document` data format into `Chroma` for the similarity check when user input the questions.
+
+- Generate answers
+  
+When user inputs one question, we will receive the question words in the server and try to match the `top 3` most similar `document`(vector) in `Chroma`. Then we will convert these `document` back to readable `string` like decoding. After that, we will compose the `template` using the `question` from the user and `top 3` most similar `string` from similarity check, which has been introduced before. Lastly, we will submit this whole `template` to `LLM` to generate the answer.
+
+
+
+
