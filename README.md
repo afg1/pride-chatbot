@@ -100,6 +100,7 @@ Currently, we only use the `markdown` files from the [help page](https://github.
 - Text Split
   
 We will devide each of the markdown files into many segmentations based on four types of symbol `#`,`##`,`###`,`####`. More specifically, we start the segmentation when any one type of the symbols `#`,`##`,`###`,`####` shows up in one markdown file and will not finish until next symbol occurs. 
+
 Here is the segmentation example of the [submit data page](https://www.ebi.ac.uk/pride/markdownpage/submitdatapage).
 
 ![Segmentation Demo](https://github.com/PRIDE-Archive/pride-chatbot/blob/main/segmentation_demo.png) 
