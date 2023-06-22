@@ -120,6 +120,11 @@ def process_documents(ignored_files: List[str] = [], source_directory: str = './
         print("No new documents to load")
         exit(0)
     print(f"Loaded {len(documents)} new documents from {source_directory}")
+    #This is the default method from LangChain to do the text split but it is not a good way to do the segmentation.
+    #In this method, we could only do the segmentation accordong to the 'chunk_size'. 
+    #But in our markdown document, one paragraph has a specific meaning which may be longer or shorter than the fixed 'chunk_size'.
+    #So I do the segmentation according to the markdown file content using the '#' to do the segmentation.
+    #More details are shown in the readme file about the segentation logic. It is not the best one and should be improved accroding to the data file.
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     texts = text_splitter.split_documents(documents)
     print(f"Split into {len(texts)} chunks of text (max. {chunk_size} tokens each)")
