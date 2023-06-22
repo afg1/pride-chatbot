@@ -7,9 +7,6 @@ from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbed
 from langchain.docstore.document import Document
 from pathlib import Path
 
-
-class VectorCreate:
-
 # create vector database from one folder directory
 def create_and_save(file_path:str):
     file_id = str(uuid.uuid4())
@@ -64,5 +61,11 @@ def add_with_id(data: str, path_id: str):
     return Vector
 
 
+#main function
+if __name__ == '__main__':
+    
+    #start service
+    src= input('Please input absolute path of all markdown files')
+    create_and_save(src)
 
 
