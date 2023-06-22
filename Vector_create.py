@@ -40,7 +40,10 @@ def import_file(data_folder: str) -> list:
                     docs.append(new_doc)
     return docs
 
-# used by the above import_file function to do the segmentation
+# used by the above import_file function to do the segmentation. 
+# This function plays the role like "RecursiveCharacterTextSplitter" from LangChain.
+# But it is not good to use "RecursiveCharacterTextSplitter" to do the segmentation only according to "chunk_size".
+# I have explain the reason in "build_indexer.py" file in the function "process_documents"
 def extract_sections(content: str) -> list:
     pattern = r"\n## |\n### |\n#### |\Z"
     sections = re.split(pattern, content)
@@ -59,5 +62,7 @@ def add_with_id(data: str, path_id: str):
     )
     Vector.id = path_id
     return Vector
+
+
 
 
