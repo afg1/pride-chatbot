@@ -97,6 +97,11 @@ python3 main.py
   
 Currently, we only use the `markdown` files from the [help page](https://github.com/PRIDE-Archive/pride-web/tree/master/public/markdown) as the source of the vecter database. In the future, we could add more data and also support other file format like `pdf`.
 
+```
+python3 vector_create.py
+```
+>First, we need to upload the markdown files to the EBI server which will be used to create the embedding database. Then input the absolute path for the markdown files. At last, we will create the embedding database which will be used for similarity check with the users' questions.
+
 - Text Split
   
 We will devide each of the markdown files into many segmentations based on four types of symbol `#`,`##`,`###`,`####`. More specifically, we start the segmentation when any one type of the symbols `#`,`##`,`###`,`####` shows up in one markdown file and will not finish until next symbol occurs. 
