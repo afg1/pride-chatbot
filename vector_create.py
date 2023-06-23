@@ -35,8 +35,6 @@ def import_file(data_folder: str) -> list:
                 for section in sections:
                     new_doc = Document(page_content=section.strip())
                     docs.append(new_doc)
-    for doc in docs: 
-        print(doc)
     return docs
 
 # used by the above import_file function to do the segmentation. 
