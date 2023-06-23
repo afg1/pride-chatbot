@@ -6,7 +6,7 @@ from typing import List
 import re
 
 import yaml
-from chromadb import Settings
+from chromadb.config import Settings
 from multiprocessing import Pool
 from tqdm import tqdm
 from langchain.text_splitter import RecursiveCharacterTextSplitter
