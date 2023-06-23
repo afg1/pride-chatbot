@@ -87,7 +87,7 @@ def signal_handler(signal, frame):
     stop_stream = True
 
 
-def main(model, tokenizer):
+def main(model, tokenizer, vector):
     history = []
     global stop_stream
     print("PRIDE ChatGLM-6B，clear to Clean the history, stop to exit the program")
@@ -113,4 +113,4 @@ if __name__ == '__main__':
     tokenizer, model = llm_model_init(cfg['llm']['model'], cfg['llm']['gpu'])
     database_path = cfg['vector']['cli_store'] + cfg['vector']['uui'] + "/"
     vector = vector_by_id(database_path=database_path,model=cfg['llm']['embedding'])
-    main(model, tokenizer) # call main function
+    main(model, tokenizer, vector) # call main function

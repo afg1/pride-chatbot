@@ -37,7 +37,7 @@ class StructuredMarkdownLoader(UnstructuredFileLoader):
         filename = self.file_path 
         docs = []
         if filename.endswith(".md"):
-            path = Path(filename)  # 替换为你的markdown文件路径
+            path = Path(filename)  
             content = path.read_text()
             sections = self.extract_sections(content)
             for section in sections:
