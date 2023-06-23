@@ -11,6 +11,8 @@ from flask import Flask, request, jsonify #flask is a web server framework
 from flask_cors import CORS # allow cross domain request
 from transformers import AutoModelForCausalLM, AutoTokenizer,AutoModel  # tool for loading model from huggingface 
 import os # operating system
+
+from Vector_create import add_with_id #import the function to update vector database using the REST api
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  #Load the environment variables required by the local model
 
 
@@ -68,7 +70,6 @@ CORS(app)
 app.config['DEBUG'] = True
 # create route
 @app.route('/post-file', methods=['POST'])
-
 def post_file():
     #Parse json variables from frontend
     data = request.get_json()
@@ -80,6 +81,18 @@ def post_file():
     result= model.chat(tokenizer = tokenizer, input = prompt, history=[])
     #Convert the result into json format and return to the foreground
     return jsonify({'ans':result[0]})
+
+# update vector database, we could ignore it if we only use commandline for test
+@app.route('/upload-data', methods=['POST'])
+def upload_data():
+    #Parse json variables from frontend
+    data = request.get_json()
+     #Get uploaded documents
+    query = data['chunk']
+    #Upload to an existing database
+    vector = add_with_id(data = query, path_id ="d4a1cccb-a9ae-43d1-8f1f-9919c90ad369") 
+    message='upload successful'
+    return jsonify({'message':message})    
 
 #main function
 if __name__ == '__main__':
