@@ -157,6 +157,6 @@ if __name__ == "__main__":
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     embeddings_model_name = cfg['llm']['embedding']
-    persist_directory = cfg['vector']['cli_store']+ cfg['vector']['uui'] + "/"
+    persist_directory = cfg['vector']['cli_store']+'/'+cfg['vector']['uui'] + "/"
     main(embeddings_model_name, persist_directory) # call main function
 
