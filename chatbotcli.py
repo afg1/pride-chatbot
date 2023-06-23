@@ -81,31 +81,34 @@ def get_similar_answer(vector, query) -> str:
         #add the question input by user ande the relevant into prompt
         
         result = prompt.format(context='\t'.join(context), question=query)
-        #result = prompt.format(context=context, question=query)
-        return result,document    # prompt template, you can add external strings to { }
-    prompt_template = """
-    ###Knowledge:{context}
-    ###Question:{question}
-    """
-    # create prompt，assign variable that can be add from other str。
-    # question：input from user。
-    # context：knowledge search in the database according to the question from user
-    prompt = PromptTemplate(
-        template=prompt_template,
-        input_variables=["context", "question"]
-    )
+        return result,document
 
-    # loading retriever in database,Search for the top three most similar document fragments
-    retriever = vector.as_retriever(search_kwargs={"k": 3})
 
-    # Searching in the database according to input from user,Returns relevant document and similarity score
-    docs = retriever.get_relevant_documents(query=query)
-    # put the relevant document into context
-    context = [d.page_content for d in docs]
 
-    # add the question input by user ande the relevant into prompt
-    result = prompt.format(context="\n".join(context), question=query)
-    return result
+# def get_similar_answer(vector, query) -> str:
+#     prompt_template = """
+#     ###Knowledge:{context}
+#     ###Question:{question}
+#     """
+#     # create prompt，assign variable that can be add from other str。
+#     # question：input from user。
+#     # context：knowledge search in the database according to the question from user
+#     prompt = PromptTemplate(
+#         template=prompt_template,
+#         input_variables=["context", "question"]
+#     )
+
+#     # loading retriever in database,Search for the top three most similar document fragments
+#     retriever = vector.as_retriever(search_kwargs={"k": 3})
+
+#     # Searching in the database according to input from user,Returns relevant document and similarity score
+#     docs = retriever.get_relevant_documents(query=query)
+#     # put the relevant document into context
+#     context = [d.page_content for d in docs]
+
+#     # add the question input by user ande the relevant into prompt
+#     result = prompt.format(context="\n".join(context), question=query)
+#     return result
 
 
 def build_prompt(history: list) -> str:
