@@ -49,7 +49,40 @@ def vector_by_id(database_path: str, model: str) -> Chroma:
 # According to the query entered by the user, retrieve relevant documents in the private database (vector),
 # and generate a complete prompt
 def get_similar_answer(vector, query) -> str:
-    # prompt template, you can add external strings to { }
+        #prompt template, you can add external strings to { }
+        prompt_template = """
+        You should summerize the knowledge and provide concise answer
+        Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
+        If you does not know the answer to a question, please say I don’t know.
+        ###Knowledge:{context}
+        ###Question:{question}
+
+        """
+        #create prompt，assign variable that can be add from other str。
+        #question：input from user。
+        #context：knowledge search in the database according to the question from user
+        prompt = PromptTemplate(
+            template=prompt_template,
+            input_variables=["context", "question"]
+        )
+        #loading retriever in database,Search for the top three most similar document fragments
+        #retriever = vector.as_retriever(search_kwargs={"k": 3})
+        #Searching in the database according to input from user,Retu rns relevant document and similarity score
+        docs = vector.similarity_search_with_score(query)       
+        #put the relevant document into context
+        document = ''
+        count = 0
+        context = []
+        for d in docs:
+            if d[1] < 1:
+                context.append(d[0].page_content)
+                count+=1
+                document = document+str(count)+':'+d[0].page_content+'\n*******\n'
+        #add the question input by user ande the relevant into prompt
+        
+        result = prompt.format(context='\t'.join(context), question=query)
+        #result = prompt.format(context=context, question=query)
+        return result,document    # prompt template, you can add external strings to { }
     prompt_template = """
     ###Knowledge:{context}
     ###Question:{question}
@@ -100,9 +133,26 @@ def main(model, tokenizer, vector):
             os.system(clear_command)
             print("PRIDE ChatGLM-6B，clear to Clean the history, stop to exit the program")
             continue
-        prompt = get_similar_answer(vector, query)
-        response, history = model.chat(tokenizer, prompt, history=history)
-        print(response)
+        count = 0
+        prompt,docs = get_similar_answer(vector, query)
+        print(docs)
+        result = model.chat(tokenizer,prompt, history=[])
+        print('Answer:')
+        print(result[0])
+
+
+        # for response, history in result:
+        #     if stop_stream:
+        #         stop_stream = False
+        #         break
+        #     else:
+        #         count += 1
+        #         if count % 8 == 0:
+        #             os.system(clear_command)
+        #             print(build_prompt(history), flush=True)
+        #             signal.signal(signal.SIGINT, signal_handler)
+        # os.system(clear_command)
+        # print(build_prompt(history), flush=True)
 
 # main function
 if __name__ == '__main__':
