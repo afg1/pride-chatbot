@@ -1,10 +1,14 @@
 llm:
-    model: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/chatglm-6b/
+    chatglm: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/chatglm-6b/
+    #change the following directory according the environment of EBI server
+    GPT4ALL_PATH: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/autodl-tmp/
+    GPTEALL_MODEL: ggml-gpt4all-j-v1.3-groovy.bin
     gpu: True
     embedding: all-MiniLM-L6-v2
     model_type: bert
 vector:
-    uui: d4a1cccb-a9ae-43d1-8f1f-9919c90ad369
+    #uui: d4a1cccb-a9ae-43d1-8f1f-9919c90ad369
+    uui: backup_embedding
     chunk_size: 500
     chunk_overlap: 50
     api_store: ./vector_store/
