@@ -3,6 +3,5 @@
 /models/THUDM/
 .idea/
 .uuid
-/vector
-/vector_store
-/vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369/
+/vector/
+/vector_store/
