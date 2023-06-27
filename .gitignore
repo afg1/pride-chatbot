@@ -3,4 +3,5 @@
 /models/THUDM/
 .idea/
 .uuid
-
+/vector
+/vector_store
