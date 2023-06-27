@@ -1,32 +1,57 @@
 #!/usr/bin/env python3
 import os
 import glob
+from pathlib import Path
 from typing import List
+import re
 
 import yaml
-from chromadb import Settings
+from chromadb.config import Settings
 from multiprocessing import Pool
 from tqdm import tqdm
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.document_loaders.unstructured import UnstructuredFileLoader
 from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.docstore.document import Document
 
 os.environ["NLTK_DATA"] = '/hps/nobackup/juan/pride/chatbot/'
 
-from langchain.document_loaders import (
-    CSVLoader,
-    EverNoteLoader,
-    PDFMinerLoader,
-    TextLoader,
-    UnstructuredEmailLoader,
-    UnstructuredEPubLoader,
-    UnstructuredHTMLLoader,
-    UnstructuredMarkdownLoader,
-    UnstructuredODTLoader,
-    UnstructuredPowerPointLoader,
-    UnstructuredWordDocumentLoader,
-)
+
+class StructuredMarkdownLoader(UnstructuredFileLoader):
+    
+    def _get_elements(self) -> List:
+        from unstructured.__version__ import __version__ as __unstructured_version__
+        from unstructured.partition.md import partition_md
+
+        # NOTE(MthwRobinson) - enables the loader to work when you're using pre-release
+        # versions of unstructured like 0.4.17-dev1
+        _unstructured_version = __unstructured_version__.split("-")[0]
+        unstructured_version = tuple([int(x) for x in _unstructured_version.split(".")])
+
+        if unstructured_version < (0, 4, 16):
+            raise ValueError(
+                f"You are on unstructured version {__unstructured_version__}. "
+                "Partitioning markdown files is only supported in unstructured>=0.4.16."
+            )
+        filename = self.file_path 
+        docs = []
+        if filename.endswith(".md"):
+            path = Path(filename)  
+            content = path.read_text()
+            sections = self.extract_sections(content)
+            for section in sections:
+                new_doc = Document(page_content=section.strip())
+                docs.append(new_doc)
+        return docs 
+    
+    @staticmethod
+    def extract_sections(content: str) -> list:
+        pattern = r"\n## |\n### |\n#### |\Z"
+        sections = re.split(pattern, content)
+        sections = [s.strip() for s in sections if s.strip()]
+        return sections
+
 
 # Define the Chroma settings
 CHROMA_SETTINGS = Settings(
@@ -36,48 +61,12 @@ CHROMA_SETTINGS = Settings(
 )
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
 
-# Custom document loaders
-class MyElmLoader(UnstructuredEmailLoader):
-    """Wrapper to fallback to text/plain when default does not work"""
-
-    def load(self) -> List[Document]:
-        """Wrapper adding fallback for elm without html"""
-        try:
-            try:
-                doc = UnstructuredEmailLoader.load(self)
-            except ValueError as e:
-                if 'text/html content not found in email' in str(e):
-                    # Try plain text
-                    self.unstructured_kwargs["content_source"] = "text/plain"
-                    doc = UnstructuredEmailLoader.load(self)
-                else:
-                    raise
-        except Exception as e:
-            # Add file_path to exception message
-            raise type(e)(f"{self.file_path}: {e}") from e
-
-        return doc
-
 
 # Map file extensions to document loaders and their arguments
 LOADER_MAPPING = {
-    ".csv": (CSVLoader, {}),
-    # ".docx": (Docx2txtLoader, {}),
-    ".doc": (UnstructuredWordDocumentLoader, {}),
-    ".docx": (UnstructuredWordDocumentLoader, {}),
-    ".enex": (EverNoteLoader, {}),
-    ".eml": (MyElmLoader, {}),
-    ".epub": (UnstructuredEPubLoader, {}),
-    ".html": (UnstructuredHTMLLoader, {}),
-    ".md": (UnstructuredMarkdownLoader, {}),
-    ".odt": (UnstructuredODTLoader, {}),
-    ".pdf": (PDFMinerLoader, {}),
-    ".ppt": (UnstructuredPowerPointLoader, {}),
-    ".pptx": (UnstructuredPowerPointLoader, {}),
-    ".txt": (TextLoader, {"encoding": "utf8"}),
+    ".md": (StructuredMarkdownLoader, {}),
     # Add more mappings for other file extensions and loaders as needed
 }
-
 
 def load_single_document(file_path: str) -> Document:
     ext = "." + file_path.rsplit(".", 1)[-1]
@@ -109,7 +98,6 @@ def load_documents(source_dir: str, ignored_files: List[str] = []) -> List[Docum
 
     return results
 
-
 def process_documents(ignored_files: List[str] = [], source_directory: str = './documents', chunk_size: int = 500, chunk_overlap: int = 50) -> List[Document]:
     """
     Load documents and split in chunks
@@ -120,15 +108,7 @@ def process_documents(ignored_files: List[str] = [], source_directory: str = './
         print("No new documents to load")
         exit(0)
     print(f"Loaded {len(documents)} new documents from {source_directory}")
-    #This is the default method from LangChain to do the text split but it is not a good way to do the segmentation.
-    #In this method, we could only do the segmentation accordong to the 'chunk_size'. 
-    #But in our markdown document, one paragraph has a specific meaning which may be longer or shorter than the fixed 'chunk_size'.
-    #So I do the segmentation according to the markdown file content using the '#' to do the segmentation.
-    #More details are shown in the readme file about the segentation logic. It is not the best one and should be improved accroding to the data file.
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    texts = text_splitter.split_documents(documents)
-    print(f"Split into {len(texts)} chunks of text (max. {chunk_size} tokens each)")
-    return texts
+    return documents
 
 
 def does_vectorstore_exist(persist_directory: str) -> bool:
@@ -153,6 +133,7 @@ def main(embeddings_model_name: str, persist_directory: str):
     if does_vectorstore_exist(persist_directory):
         # Update and store locally vectorstore
         print(f"Appending to existing vectorstore at {persist_directory}")
+        CHROMA_SETTINGS.persist_directory = persist_directory
         db = Chroma(persist_directory=persist_directory, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
         collection = db.get()
         texts = process_documents([metadata['source'] for metadata in collection['metadatas']])
@@ -169,13 +150,13 @@ def main(embeddings_model_name: str, persist_directory: str):
     db.persist()
     db = None
 
-    print(f"Ingestion complete! You can now run privateGPT.py to query your documents")
+    print(f"Ingestion complete! You can now run chatbotcli.py to query your documents")
 
 
 if __name__ == "__main__":
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     embeddings_model_name = cfg['llm']['embedding']
-    persist_directory = cfg['vector']['cli_store']+ cfg['vector']['uui'] + "/"
+    persist_directory = cfg['vector']['cli_store']+'/'+cfg['vector']['uui'] + "/"
     main(embeddings_model_name, persist_directory) # call main function
 
