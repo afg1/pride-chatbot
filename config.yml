@@ -7,8 +7,8 @@ llm:
     embedding: all-MiniLM-L6-v2
     model_type: bert
 vector:
-    #uui: d4a1cccb-a9ae-43d1-8f1f-9919c90ad369
-    uui: backup_embedding
+    uui: d4a1cccb-a9ae-43d1-8f1f-9919c90ad369
+    #uui: backup_embedding
     chunk_size: 500
     chunk_overlap: 50
     api_store: ./vector_store/
