@@ -73,8 +73,9 @@ def load_single_document(file_path: str) -> Document:
     if ext in LOADER_MAPPING:
         loader_class, loader_args = LOADER_MAPPING[ext]
         loader = loader_class(file_path, **loader_args)
-        return loader.load()[0]
-
+        docs = loader._get_elements()
+        return docs
+        
     raise ValueError(f"Unsupported file extension '{ext}'")
 
 
