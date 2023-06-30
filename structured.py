@@ -27,7 +27,7 @@ class StructuredMarkdownLoader(UnstructuredFileLoader):
             content = path.read_text()
             sections = self.extract_sections(content)
             for section in sections:
-                new_doc = Document(page_content=section.strip(),metadata = {'soure':filename}) # the source is used for repeated file check
+                new_doc = Document(page_content=section.strip(),metadata = {'source':filename}) # the source is used for repeated file check
                 docs.append(new_doc)
         return docs 
     
