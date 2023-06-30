@@ -66,6 +66,36 @@ def load_documents(source_dir: str, ignored_files: List[str] = []) -> List[Docum
 
     return results
 
+# import concurrent.futures
+# import os
+# import glob
+# from typing import List
+
+# def load_documents(source_dir: str, ignored_files: List[str] = []) -> List[Document]:
+#     """
+#     Loads all documents from the source documents directory, ignoring specified files
+#     """
+#     all_files = []
+#     for ext in LOADER_MAPPING:
+#         all_files.extend(
+#             glob.glob(os.path.join(source_dir, f"**/*{ext}"), recursive=True)
+#         )
+#     filtered_files = [file_path for file_path in all_files if file_path not in ignored_files]
+#     # print(filtered_files)
+#     results = []
+#     with concurrent.futures.ProcessPoolExecutor() as executor:
+#         future_to_file = {executor.submit(load_single_document, file): file for file in filtered_files}
+#         for future in concurrent.futures.as_completed(future_to_file):
+#             file = future_to_file[future]
+#             try:
+#                 data = future.result()
+#             except Exception as exc:
+#                 print(f'{file} generated an exception: {exc}')
+#             else:
+#                 results.extend(data)
+#     return results
+
+
 def process_documents(ignored_files: List[str] = [], source_directory: str = './documents', chunk_size: int = 500, chunk_overlap: int = 50) -> List[Document]:
     """
     Load documents and split in chunks
