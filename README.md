@@ -78,6 +78,9 @@ Now, excetp the chatgml, we also support more models:
     # Chatglm2-6b: https://huggingface.co/THUDM/chatglm2-6b
     # Chatglm-6b: https://huggingface.co/THUDM/chatglm-6b
     git clone https://huggingface.co/THUDM/chatglm-6b
+
+    # If you want to download GPT4ALL, it is different from the above LLM. We do not use `git clone` but `wget` as show below.
+    wget https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin
     
     # if you want to clone without large files – just their pointers
     # prepend your git clone with the following env var:
