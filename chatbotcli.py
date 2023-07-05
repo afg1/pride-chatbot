@@ -5,7 +5,7 @@ import yaml
 from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbeddings  # Use to load the embedding model in hugginface
 from langchain.vectorstores import Chroma  # A tool that converts documents into vectors and can store and read them
 from langchain.prompts import PromptTemplate  # Tool for generating prompts
-from transformers import AutoTokenizer, AutoModel  # tool for loading model from huggingface
+from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM, AutoConfig  # tool for loading model from huggingface
 import os
 
 # Variables initialization
@@ -24,7 +24,7 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
     with open("config.yml", "r") as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     if choice =='1':  #load ChatGLM-6B
-        model_path = cfg['llm']['chatglm']
+        model_path = cfg['llm']['chatglm2']
         # Load the Tokenizer, convert the text input into an input that the model can accept
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         # Load the model, load it to the GPU in half-precision mode
@@ -39,6 +39,28 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
         model_name = cfg['llm']['GPTEALL_MODEL']
         model = gpt4all.GPT4All(model_path=model_path, model_name=model_name)
         return '1', model
+    elif choice == '3': #load the vicuna-13b
+        model_path = cfg['llm']['Vicuna-13B']
+        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path, 
+            low_cpu_mem_usage=True,device_map = "auto",
+            torch_dtype=torch.float16).to('cuda:0')
+        return tokenizer, model
+    elif choice =='4': #use mpt-7b 
+        model_path =  cfg['llm']['mbt-7b']
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
+        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        #config.attn_config['attn_impl'] = 'triton'
+        config.init_device = 'cuda:0' # For fast initialization directly on GPU!
+        config.max_seq_len = 256 
+        model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        config=config,
+        torch_dtype=torch.bfloat16, # Load model weights in bfloat16
+        trust_remote_code=True
+        )
+        return tokenizer,model
 
 #chat with model    
 def llm_chat(choice:str,prompt:str,tokenizer,model):
@@ -47,6 +69,14 @@ def llm_chat(choice:str,prompt:str,tokenizer,model):
     elif choice =='2':#chat with GPT4ALL 
         messages = [{"role": "user", "content": prompt}]
         result = model.chat_completion(messages,default_prompt_header=False)
+    elif choice =='3': #chat with vicuna-13b
+        inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
+        outputs = model.generate(**inputs, max_new_tokens=256)
+        result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    elif choice == '4': #chat with mpt-7b
+        inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
+        outputs = model.generate(**inputs, max_new_tokens=256)
+        result = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return result
 
 # Load the specified private database (vector) by specifying the id
@@ -179,7 +209,7 @@ if __name__ == '__main__':
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     for llm in cfg:
         print(llm)
-    print("Please choose the model!\n 1 - chatglm \n 2 - GPT4ALL")
+    print("Please choose the model!\n 1 - Chatglm2 \n 2 - GPT4ALL 3 - Vicuna 13b\n 4 - MPT 7b\n")
     choice = input('\nChoice:') #user choose model with number 
     tokenizer, model = llm_model_init(choice.strip(), cfg['llm']['gpu'])
     database_path = cfg['vector']['cli_store'] + cfg['vector']['uui'] 
