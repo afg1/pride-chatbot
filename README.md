@@ -60,13 +60,27 @@ model = AutoModel.from_pretrained("/hps/nobackup/juan/pride/chatbot/chatglm-6b",
 ![Flow Chart](https://github.com/PRIDE-Archive/pride-chatbot/blob/main/flowchart.jpeg) 
 
 ## How to run this project
-This project currently uses the [chatglm](https://github.com/THUDM/ChatGLM-6B) model and requires at least 12GB memory of GPU.
+This project currently uses the [Chatglm](https://github.com/THUDM/ChatGLM-6B) model and requires at least 12GB memory of GPU.
+
+Now, excetp the chatgml, we also support more models:
+- [GPT4ALL](https://github.com/nomic-ai/gpt4all)
+- [Vicuna](https://github.com/lm-sys/FastChat)
+- [MPT](https://huggingface.co/mosaicml/mpt-7b-chat)
+- [Chatglm2](https://github.com/THUDM/ChatGLM2-6B)
 ### Step1: Donwload the LLM
-    #Make sure you have git-lfs installed (https://git-lfs.com)
+    # Make sure you have git-lfs installed (https://git-lfs.com)
     git lfs install
+    
+    # You could choose one of the model download link to install the model to your own server.
+    # We use chatglm-6b as the default example.
+    # Vicuna: https://huggingface.co/lmsys/vicuna-13b-v1.3
+    # MPT-7B-CHAT: https://huggingface.co/mosaicml/mpt-7b-chat
+    # Chatglm2-6b: https://huggingface.co/THUDM/chatglm2-6b
+    # Chatglm-6b: https://huggingface.co/THUDM/chatglm-6b
     git clone https://huggingface.co/THUDM/chatglm-6b
-    #if you want to clone without large files – just their pointers
-    #prepend your git clone with the following env var:
+    
+    # if you want to clone without large files – just their pointers
+    # prepend your git clone with the following env var:
     GIT_LFS_SKIP_SMUDGE=1
 ### Step2: Donwload the Sentence Transformers
     git lfs install
@@ -76,14 +90,14 @@ This project currently uses the [chatglm](https://github.com/THUDM/ChatGLM-6B) m
 ### Step4: Specify the path to the local model in `main.python`
 - The path of the local LLM
 ```python
-#Load the Tokenizer, convert the text input into an input that the model can accept
+# Load the Tokenizer, convert the text input into an input that the model can accept
 tokenizer = AutoTokenizer.from_pretrained("/root/autodl-tmp/chatglm-6b", trust_remote_code=True)
-#Load the model, load it to the GPU in half-precision mode
+# Load the model, load it to the GPU in half-precision mode
 model = AutoModel.from_pretrained("/root/autodl-tmp/chatglm-6b", trust_remote_code=True).half().cuda()  
 ```
 - The path of the `Sentence Transformer` used for embedding
 ```python
-#Load private knowledge base, uses embedding model named sentence-transformers
+# Load private knowledge base, uses embedding model named sentence-transformers
 vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"))
  ```
 ### Step5: Start the server
