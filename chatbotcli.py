@@ -1,4 +1,4 @@
-
+import torch
 import platform
 import gpt4all
 import yaml
@@ -29,10 +29,10 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         # Load the model, load it to the GPU in half-precision mode
         if gpu:
-            model = AutoModel.from_pretrained(model,trust_remote_code=True).half().cuda()
+            model = AutoModel.from_pretrained(model_path,trust_remote_code=True).half().cuda()
         else:
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-            model = AutoModel.from_pretrained(model, trust_remote_code=True).cpu().float()
+            model = AutoModel.from_pretrained(model_path, trust_remote_code=True).cpu().float()
         return tokenizer, model
     elif choice == '2': #load the GPT4All only cpu
         model_path = cfg['llm']['GPT4ALL_PATH']
@@ -53,7 +53,7 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         #config.attn_config['attn_impl'] = 'triton'
         config.init_device = 'cuda:0' # For fast initialization directly on GPU!
-        config.max_seq_len = 256 
+        config.max_seq_len = 1024 
         model = AutoModelForCausalLM.from_pretrained(
         model_path,
         config=config,
@@ -75,7 +75,7 @@ def llm_chat(choice:str,prompt:str,tokenizer,model):
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
     elif choice == '4': #chat with mpt-7b
         inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
-        outputs = model.generate(**inputs, max_new_tokens=256)
+        outputs = model.generate(**inputs, max_new_tokens=1024)
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return result
 
