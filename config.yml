@@ -5,7 +5,9 @@ llm:
     GPT4ALL_PATH: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/autodl-tmp/
     GPTEALL_MODEL: ggml-gpt4all-j-v1.3-groovy.bin
     Vicuna-13B: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/vicuna-13b-v1.3/
-    mbt-7b: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/mpt-7b-chat/
+    mbt-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/mpt-7b-chat/
+    guanaco-7b: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/guanaco-7b/
+    llama-7b: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/llama-7b/
     gpu: True
     embedding: all-MiniLM-L6-v2
     model_type: bert

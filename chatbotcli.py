@@ -5,7 +5,8 @@ import yaml
 from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbeddings  # Use to load the embedding model in hugginface
 from langchain.vectorstores import Chroma  # A tool that converts documents into vectors and can store and read them
 from langchain.prompts import PromptTemplate  # Tool for generating prompts
-from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM, AutoConfig  # tool for loading model from huggingface
+from transformers import AutoTokenizer, AutoModel,AutoModelForCausalLM,BitsAndBytesConfig,AutoConfig# tool for loading model from huggingface
+from peft import PeftModel  
 import os
 
 # Variables initialization
@@ -47,8 +48,8 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
             low_cpu_mem_usage=True,device_map = "auto",
             torch_dtype=torch.float16).to('cuda:0')
         return tokenizer, model
-    elif choice =='4': #use mpt-7b 
-        model_path =  cfg['llm']['mbt-7b']
+    elif choice =='4': #use mpt-7b-chat 
+        model_path =  cfg['llm']['mbt-7b-chat']
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         #config.attn_config['attn_impl'] = 'triton'
@@ -61,7 +62,24 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
         trust_remote_code=True
         )
         return tokenizer,model
-
+    elif choice == '5': #use guanaco-7b
+        llama_path = cfg['llm']['llama-7b']
+        model_path = cfg['llm']['guanaco-7b']
+        model = AutoModelForCausalLM.from_pretrained(
+            llama_path,
+            load_in_4bit=True,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+            quantization_config=BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+                bnb_4bit_use_double_quant=True,
+                bnb_4bit_quant_type='nf4'
+            ),
+        )
+        model = PeftModel.from_pretrained(model, model_path)
+        tokenizer = AutoTokenizer.from_pretrained(llama_path)
+        return tokenizer, model
 #chat with model    
 def llm_chat(choice:str,prompt:str,tokenizer,model):
     if choice =='1':#chat with ChatGLM
@@ -73,9 +91,13 @@ def llm_chat(choice:str,prompt:str,tokenizer,model):
         inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
         outputs = model.generate(**inputs, max_new_tokens=256)
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    elif choice == '4': #chat with mpt-7b
+    elif choice == '4': #chat with mpt-7b-chat
         inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
-        outputs = model.generate(**inputs, max_new_tokens=1024)
+        outputs = model.generate(**inputs, max_new_tokens=256)
+        result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    elif choice == '5':  #chat with guanaco-7b
+        inputs = tokenizer(prompt, return_tensors="pt").to("cuda:0")
+        outputs = model.generate(inputs=inputs.input_ids, max_new_tokens=256)
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return result
 
@@ -209,7 +231,7 @@ if __name__ == '__main__':
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     for llm in cfg:
         print(llm)
-    print("Please choose the model!\n 1 - Chatglm2 \n 2 - GPT4ALL 3 - Vicuna 13b\n 4 - MPT 7b\n")
+    print("Please choose the model!\n 1 - Chatglm2 \n 2 - GPT4ALL 3 - Vicuna 13b\n 4 - MPT-7B-Chat 7b\n 5 - Guanaco 7b\n")
     choice = input('\nChoice:') #user choose model with number 
     tokenizer, model = llm_model_init(choice.strip(), cfg['llm']['gpu'])
     database_path = cfg['vector']['cli_store'] + cfg['vector']['uui'] 
