@@ -82,8 +82,8 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
         return tokenizer, model
     elif choice =='6': #llama2-7b-chat
         llama2_path = cfg['llm']['llama2-chat']
-        tokenizer = AutoTokenizer.from_pretrained("llama2_path",trust_remote_code=True)
-        model = AutoModelForCausalLM.from_pretrained("llama2_path",device_map="auto", trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path,trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(llama2_path,device_map="auto", trust_remote_code=True)
         return tokenizer,model
 #chat with model    
 def llm_chat(choice:str,prompt:str,tokenizer,model):
