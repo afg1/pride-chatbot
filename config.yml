@@ -8,6 +8,7 @@ llm:
     mbt-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/mpt-7b-chat/
     guanaco-7b: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/guanaco-7b/
     llama-7b: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/llama-7b/
+    llama2-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/Llama-2-7b-chat-hf/
     gpu: True
     embedding: all-MiniLM-L6-v2
     model_type: bert

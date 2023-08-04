@@ -80,6 +80,11 @@ def llm_model_init(choice: str, gpu: bool) -> (AutoTokenizer, AutoModel):
         model = PeftModel.from_pretrained(model, model_path)
         tokenizer = AutoTokenizer.from_pretrained(llama_path)
         return tokenizer, model
+    elif choice =='6': #llama2-7b-chat
+        llama2_path = cfg['llm']['llama2-chat']
+        tokenizer = AutoTokenizer.from_pretrained("llama2_path",trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained("llama2_path",device_map="auto", trust_remote_code=True)
+        return tokenizer,model
 #chat with model    
 def llm_chat(choice:str,prompt:str,tokenizer,model):
     if choice =='1':#chat with ChatGLM
@@ -96,6 +101,10 @@ def llm_chat(choice:str,prompt:str,tokenizer,model):
         outputs = model.generate(**inputs, max_new_tokens=256)
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
     elif choice == '5':  #chat with guanaco-7b
+        inputs = tokenizer(prompt, return_tensors="pt").to("cuda:0")
+        outputs = model.generate(inputs=inputs.input_ids, max_new_tokens=256)
+        result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    elif choice == '6':  #chat with llama2-chat
         inputs = tokenizer(prompt, return_tensors="pt").to("cuda:0")
         outputs = model.generate(inputs=inputs.input_ids, max_new_tokens=256)
         result = tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -231,7 +240,7 @@ if __name__ == '__main__':
         cfg = yaml.load(ymlfile, Loader=yaml.Loader)
     for llm in cfg:
         print(llm)
-    print("Please choose the model!\n 1 - Chatglm2 \n 2 - GPT4ALL 3 - Vicuna 13b\n 4 - MPT-7B-Chat 7b\n 5 - Guanaco 7b\n")
+    print("Please choose the model!\n 1 - Chatglm2 \n 2 - GPT4ALL 3 - Vicuna 13b\n 4 - MPT-7B-Chat 7b\n 5 - Guanaco 7b\n 6 - Llama2-7B-Chat\n")
     choice = input('\nChoice:') #user choose model with number 
     tokenizer, model = llm_model_init(choice.strip(), cfg['llm']['gpu'])
     database_path = cfg['vector']['cli_store'] + cfg['vector']['uui'] 
