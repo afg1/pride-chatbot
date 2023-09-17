@@ -1,0 +1,194 @@
+import torch
+from transformers import AutoTokenizer,AutoModel,AutoModelForCausalLM
+import platform
+import gpt4all
+import torch
+import yaml
+import re
+import openai
+from langchain.llms import OpenAI
+from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbeddings  # Use to load the embedding model in hugginface
+from langchain.vectorstores import Chroma  # A tool that converts documents into vectors and can store and read them
+from langchain.prompts import PromptTemplate  # Tool for generating prompts
+from transformers import AutoTokenizer, AutoModel,AutoModelForCausalLM,BitsAndBytesConfig,AutoConfig# tool for loading model from huggingface
+from peft import PeftModel    
+import os
+import torch
+import torch.cuda as cuda
+import transformers
+from transformers import pipeline
+
+
+class Load_model:
+    """Model loader is a class for model load
+
+      Args: model_path
+    
+    """
+
+    kwargs = {}
+
+    def __init__(self,model_path) -> None:
+
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model_path = model_path
+        self.kwargs = {
+            "torch_dtype": torch.float16,
+            "device_map": "auto",
+        }
+
+    def loader(self, num_gpus, load_8bit=False, debug=False):
+        if self.device == "cpu":
+            kwargs = {}
+        elif self.device == "cuda":
+            kwargs = {"torch_dtype": torch.float16}
+            if num_gpus == "auto":
+                kwargs["device_map"] = "auto"
+            else:
+                num_gpus = int(num_gpus)
+                if num_gpus != 1:
+                    kwargs.update({
+                        "device_map": "auto",
+                        "max_memory": {i: "13GiB" for i in range(num_gpus)},
+                    })
+        else:
+            raise ValueError(f"Invalid device: {self.device}")
+
+        if "chatglm" in self.model_path:
+            tokenizer = AutoTokenizer.from_pretrained(self.model_path, trust_remote_code=True)
+            model = AutoModel.from_pretrained(self.model_path, trust_remote_code=True).half().cuda()
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(self.model_path, use_fast=False)
+            model = AutoModelForCausalLM.from_pretrained(self.model_path,
+                                                         low_cpu_mem_usage=True, **kwargs)
+
+        # if load_8bit:
+        #     compress_module(model, self.device)
+
+        if (self.device == "cuda" and num_gpus == 1):
+            model.to(self.device)
+
+        if debug:
+            print(model)
+
+        return model, tokenizer
+
+    # Variables initialization
+os_name = platform.system()
+clear_command = 'cls' if os_name == 'Windows' else 'clear'
+stop_stream = False
+os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
+def llm_model_init(choice: str, gpu: bool) :
+    torch.cuda.empty_cache()
+    cuda.empty_cache()
+    """
+    Init model and tokenizer from provided path
+    :param gpu: If use gpu to load model
+    :param model_path: model path
+    :return: tokenizer, model
+    """
+    with open("config.yml", "r") as ymlfile:
+        cfg = yaml.load(ymlfile, Loader=yaml.Loader)
+    if choice =='chatglm2-6b':  #load ChatGLM-6B
+        model_path = cfg['llm']['chatglm2']
+        # Load the Tokenizer, convert the text input into an input that the model can accept
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+            # Load the model, load it to the GPU in half-precision mode
+        if gpu:
+            model = AutoModel.from_pretrained(model_path,trust_remote_code=True).half().cuda()
+        else:
+            os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+            model = AutoModel.from_pretrained(model_path, trust_remote_code=True).cpu().float()
+        return tokenizer, model
+    elif choice == 'GPT4ALL': #load the GPT4All only cpu
+        model_path = cfg['llm']['GPT4ALL_PATH']
+        model_name = cfg['llm']['GPTEALL_MODEL']
+        model = gpt4all.GPT4All(model_path=model_path, model_name=model_name)
+        return '1',model
+    elif choice == 'vicuna-13b': #load the vicuna-13b
+        model_path = cfg['llm']['Vicuna-13B']
+        tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_path, 
+            low_cpu_mem_usage=True,device_map = "auto",
+            torch_dtype=torch.float16).to('cuda:0')
+        return tokenizer, model
+    elif choice =='baichuan-7b': #use baichaui-7b
+        model_path = cfg['llm']['baichuan-7b']
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
+        model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", trust_remote_code=True, torch_dtype=torch.float16).to('cuda:0')
+        return tokenizer, model
+    elif choice =='mpt-7b': #use mpt-7b 
+        model_path =  cfg['llm']['mbt-7b-chat']
+        tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
+        config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
+        #config.attn_config['attn_impl'] = 'triton'
+        config.init_device = 'cuda:0' # For fast initialization directly on GPU!
+        config.max_seq_len = 789 
+        model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        config=config,
+        torch_dtype=torch.bfloat8, # Load model weights in bfloat16
+        trust_remote_code=True
+        )
+        return tokenizer,model
+    elif choice =='llama2-chat': #llama2-7b-chat
+        llama2_path = cfg['llm']['llama2-chat']
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path,trust_remote_code=True)
+        model = transformers.pipeline(
+        "text-generation",
+        model=llama2_path,
+        torch_dtype=torch.float16,
+        device_map="auto",
+        trust_remote_code=True
+        )
+        return tokenizer,model
+    elif choice =='GPT4ALL': #llama2-7b-chat
+        model = gpt4all.GPT4All(model_path='/root/autodl-tmp', model_name='ggml-gpt4all-j-v1.3-groovy.bin')
+        tokenizer = None
+        return tokenizer,model
+#chat with model    
+def llm_chat(choice:str,prompt:str,tokenizer,model,query:str):
+    if choice =='chatglm2-6b': #chat with ChatGLM
+        result = model.chat(tokenizer,prompt, history=[])
+        result = result[0]  
+    elif choice =='vicuna-13b': #chat with vicuna-13b
+        inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
+        outputs = model.generate(**inputs, max_new_tokens=256)
+        result = tokenizer.decode(outputs[0], skip_special_tokens=True)    
+    elif choice == 'mpt-7b': #chat with mpt-7b
+        inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
+        outputs = model.generate(**inputs, max_new_tokens=789)
+        result = tokenizer.decode(outputs[0], skip_special_tokens=True)   
+    elif choice == 'llama2-chat':  #chat with llama2-chat
+        # inputs = tokenizer(prompt,return_tensors="pt").to("cuda:0")
+        out =  model(
+                    prompt,
+                    do_sample=True,
+                    top_k=1,
+                    num_return_sequences=1,
+                    eos_token_id=tokenizer.eos_token_id,
+                    max_length=1024,
+                    )
+        print(out)
+        # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
+        # content_start = start_index + len("###Question:"+prompt) + 1
+        # end_index = out[0]['generated_text'].find("###", content_start)
+        # result = out[0]['generated_text'][content_start:end_index].strip()
+        result =  out[0]['generated_text'].replace(prompt, "", 1).strip()
+    elif choice == 'GPT4ALL': #chat with mpt-7b
+        messages = [{"role": "user", "content": prompt}]
+        a = model.chat_completion(messages,default_prompt_header=False)
+        result = a['choices'][0]['message']['content']
+    elif choice ==  'baichuan-7b':
+        inputs = tokenizer(prompt, return_tensors="pt").to('cuda:0')
+        outputs = model.generate(**inputs, max_new_tokens=1024)
+        out = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        print (out)
+        start_index = out.find("###Question:"+query)
+        content_start = start_index + len("###Question:"+query) + 1
+        end_index = out.find("###", content_start)
+        result = out[content_start:end_index].strip()
+        if len (result)==0:
+            result = 'model error'
+    return result

@@ -1,0 +1,6 @@
+.DS_Store
+/models/sentence-transformers/
+/models/THUDM/
+.idea/
+.uuid
+
