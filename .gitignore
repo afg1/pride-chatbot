@@ -1,7 +1,0 @@
-.DS_Store
-/models/sentence-transformers/
-/models/THUDM/
-.idea/
-.uuid
-/vector/
-/vector_store/

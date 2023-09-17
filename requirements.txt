@@ -1,8 +1,0 @@
-chromadb
-click
-Flask
-hnswlib
-langchain
-torch
-transformers
-transformers[sentencepiece]
