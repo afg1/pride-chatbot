@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from queue import Queue
 import threading
 import time
+import sqlite3
 
 # global variables
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  #Load the environment variables required by the local model
@@ -25,7 +26,8 @@ model_name_str = None
 user_id = []
 request_queue = Queue()
 websockets = {}  # Saving websocket clients
-UPLOAD_FOLDER = './documents/user_upload'  
+UPLOAD_FOLDER = './documents/user_upload'
+sql_conn = sqlite3.connect('chatbot.db')
 
 # functions
 
@@ -35,7 +37,8 @@ def extract_sections(content: str) -> list:
     sections = re.split(pattern, content)
     sections = [s.strip() for s in sections if s.strip()]
     return sections
-    
+
+
 #Delete vector in chroma by filename
 def delete_by_file(vector,filname:str):
     ids = []
@@ -50,6 +53,7 @@ def delete_by_file(vector,filname:str):
         return jsonify({"result":"success"})
     else:
         return jsonify({"result":"Can't find the file"})
+
 
 #Load the specified private database (vector) by specifying the id
 def vector_by_id(path_id:str):
@@ -66,7 +70,8 @@ def vector_by_id(path_id:str):
                 unique_data.append(item)
         vector.source = unique_data
         return vector
-    
+
+
 #Search for relevant content in the vector based on the query and build a prompt
 def get_similar_answer(vector, query,model) -> str:
     #prompt template, you can add external strings to { }
@@ -110,6 +115,7 @@ def get_similar_answer(vector, query,model) -> str:
     result = prompt.format(context='\t'.join(context), question=query)
     return result,document
 
+
 #Processing chat requests
 def process(prompt, model_name):
     global model
@@ -130,16 +136,50 @@ def process(prompt, model_name):
     completion = load_model.llm_chat(model_name,prompt,tokenizer,model,query)
     result = {"result": completion,"relevant-chunk": docs}
     return result     
- 
+
+
 #Processing requests in the queue
 def process_queue():
     while True:
         if not request_queue.empty():
             data =  request_queue.get()
-            result = process(data['prompt'], data['model_name'])
+            start_time = round(time.time() * 1000)
+            chat_query = data['prompt']
+            llm_model = data['model_name']
+            result = process(chat_query, llm_model)
+            end_time = round(time.time() * 1000)
+            time_ms = end_time - start_time
+
+            # insert the query & answer to database
+            global sql_conn
+            cursor = sql_conn.cursor()
+            cursor.execute("INSERT INTO chat_history (query, model, answer, millisecs) VALUES (?, ?, ?, ?)", (chat_query, llm_model, result, time_ms))
+            sql_conn.commit()
+            cursor.close()
+
             data['response_queue'].put( result )
             request_queue.task_done()
 
+
+def create_sqlite_db():
+    global sql_conn
+    sql_cursor = sql_conn.cursor()
+
+    sql_cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_history (
+            id INTEGER PRIMARY KEY,
+            query TEXT,
+            model TEXT,
+            answer TEXT,
+            millisecs INTEGER
+        )
+    ''')
+
+    sql_cursor.close()
+    # sql_conn.close()
+
+
+create_sqlite_db()
 
 processing_thread = threading.Thread(target= process_queue)
 processing_thread.daemon = True
@@ -230,7 +270,52 @@ async def model_choice(item: dict):
     model_name_str = item['model_name']
     return {"result": 'success'}
 
- 
+
+@app.post('/query_history')
+def query_history(query: str):
+    global sql_conn
+    cursor = sql_conn.cursor()
+    cursor.execute(
+        "SELECT query, model, answer, AVG(millisecs) FROM chat_history WHERE query = ? GROUP BY query, model, answer",
+        (query,))
+
+    data = cursor.fetchall()
+    results = []
+    for row in data:
+        result_dict = {
+            'query': row[0],
+            'model': row[1],
+            'answer': row[2],
+            'time': row[3],
+        }
+        results.append(result_dict)
+
+    cursor.close()
+    return results
+
+
+@app.get('/all_query_history')
+def query_history():
+    global sql_conn
+    cursor = sql_conn.cursor()
+    cursor.execute(
+        "SELECT query, model, answer, AVG(millisecs) FROM chat_history GROUP BY query, model, answer")
+
+    data = cursor.fetchall()
+    results = []
+    for row in data:
+        result_dict = {
+            'query': row[0],
+            'model': row[1],
+            'answer': row[2],
+            'time': row[3],
+        }
+        results.append(result_dict)
+
+    cursor.close()
+    return results
+
+
 if __name__ == '__main__':
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=6006)
