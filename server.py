@@ -57,7 +57,7 @@ def delete_by_file(vector,filname:str):
 
 #Load the specified private database (vector) by specifying the id
 def vector_by_id(path_id:str):
-        directory = "./vector/"+path_id
+        directory = "/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/"+path_id
         vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
         data = vector.get()['metadatas']
         unique_data = []
@@ -128,12 +128,23 @@ def process(prompt, model_name):
         model_name_str= model_name
         torch.cuda.empty_cache()
         gc.collect()
-        tokenizer,model =load_model.llm_model_init(model_name_str,True)
+        try:
+            print(model_name_str)
+            tokenizer, model = load_model.llm_model_init(model_name_str, True)
+        except Exception as e:
+            print(e)
+            print('error in initialising model', model_name_str)
+            return {"result": "error in initialising model", "relevant-chunk": docs}
     query = prompt
-    db = Chroma(persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369", embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
+    db = Chroma(persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/1200f839-aa61-4ef0-a9e5-af92aa79347f", embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
     #Retrieve relevant documents in databse and form a prompt
     prompt,docs = get_similar_answer(vector = db,query = query,model =  model_name)
-    completion = load_model.llm_chat(model_name,prompt,tokenizer,model,query)
+    try:
+        completion = load_model.llm_chat(model_name, prompt, tokenizer, model, query)
+    except Exception as e:
+        print(e)
+        print('error in loading model', model_name_str)
+        completion = "error in loading model"
     result = {"result": completion,"relevant-chunk": docs}
     return result     
 
@@ -218,7 +229,7 @@ async def chat(data: dict):
 @app.get('/load')
 async def load():
     #load the database according to uuid
-    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+    vector = vector_by_id('1200f839-aa61-4ef0-a9e5-af92aa79347f')
     return JSONResponse(content=vector.source)
 
 #Update database
@@ -238,14 +249,14 @@ async def upload(file: UploadFile = File(...)):
         db= Chroma.from_documents(
                 documents=docs, 
                 embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"),
-                persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
+                persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/1200f839-aa61-4ef0-a9e5-af92aa79347f"
                 )
         db.persist()
         #file.save(os.path.join(app.config['UPLOAD_FOLDER'],file.filename))
         with open(UPLOAD_FOLDER+'/'+file.filename, 'w', encoding='utf-8') as save_file:
             save_file.write(content)
         return jsonify({'result':"update successful"})
-        vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+        vector = vector_by_id('1200f839-aa61-4ef0-a9e5-af92aa79347f')
     else:
         return jsonify({'result':'No markdown file part in the request.'}), 400
         
@@ -258,7 +269,7 @@ def download_file(filename:str):
 #Delete database
 @app.post('/delete')
 async def delete(item: dict):
-    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+    vector = vector_by_id('1200f839-aa61-4ef0-a9e5-af92aa79347f')
     filename = item["filename"]
     os.remove(filename)
     print(filename)

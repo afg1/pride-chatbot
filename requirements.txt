@@ -8,3 +8,5 @@ PyYAML==6.0.1
 torch==2.0.1
 transformers==4.29.0
 uvicorn==0.23.2
+xformers
+
