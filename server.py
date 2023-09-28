@@ -145,8 +145,10 @@ def process_queue():
             data =  request_queue.get()
             start_time = round(time.time() * 1000)
             chat_query = data['prompt']
+            chat_query = chat_query.strip()
             llm_model = data['model_name']
             result = process(chat_query, llm_model)
+            result = result.strip()
             end_time = round(time.time() * 1000)
             time_ms = end_time - start_time
 
