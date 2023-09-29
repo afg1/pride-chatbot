@@ -119,7 +119,7 @@ def llm_model_init(choice: str, gpu: bool) :
         model = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto", trust_remote_code=True, torch_dtype=torch.float16).to('cuda:0')
         return tokenizer, model
     elif choice =='mpt-7b': #use mpt-7b 
-        model_path =  cfg['llm']['mbt-7b-chat']
+        model_path =  cfg['llm']['mpt-7b-chat']
         tokenizer = AutoTokenizer.from_pretrained("EleutherAI/gpt-neox-20b")
         config = AutoConfig.from_pretrained(model_path, trust_remote_code=True)
         #config.attn_config['attn_impl'] = 'triton'
@@ -128,7 +128,7 @@ def llm_model_init(choice: str, gpu: bool) :
         model = AutoModelForCausalLM.from_pretrained(
         model_path,
         config=config,
-        torch_dtype=torch.bfloat8, # Load model weights in bfloat16
+        torch_dtype=torch.float16, # Load model weights in bfloat16
         trust_remote_code=True
         )
         return tokenizer,model
@@ -144,7 +144,7 @@ def llm_model_init(choice: str, gpu: bool) :
         )
         return tokenizer,model
     elif choice =='GPT4ALL': #llama2-7b-chat
-        model = gpt4all.GPT4All(model_path='/root/autodl-tmp', model_name='ggml-gpt4all-j-v1.3-groovy.bin')
+        model = gpt4all.GPT4All(model_path='/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/', model_name='ggml-gpt4all-j-v1.3-groovy.bin')
         tokenizer = None
         return tokenizer,model
 #chat with model    

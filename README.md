@@ -82,7 +82,7 @@ GPTEALL_MODEL: ggml-gpt4all-j-v1.3-groovy.bin
 chatglm2: /root/autodl-tmp/chatglm2-6b
 Vicuna-13B: /root/autodl-tmp/vicuna-13b-v1.3
 baichuan-7b: /root/autodl-tmp/Baichuan-7B
-mbt-7b-chat: /root/autodl-tmp/mpt-7b-chat
+mpt-7b-chat: /root/autodl-tmp/mpt-7b-chat
 llama2-chat: /root/autodl-tmp/Llama-2-7b-chat-hf
 ```
 

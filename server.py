@@ -118,60 +118,41 @@ def get_similar_answer(vector, query,model) -> str:
 
 #Processing chat requests
 def process(prompt, model_name):
-    global model
-    global tokenizer
-    global model_name_str 
-                
-    if model_name_str!= model_name:
-        del model
-        del tokenizer
-        model_name_str= model_name
-        torch.cuda.empty_cache()
-        gc.collect()
-        try:
-            print(model_name_str)
-            tokenizer, model = load_model.llm_model_init(model_name_str, True)
-        except Exception as e:
-            print(e)
-            print('error in initialising model', model_name_str)
-            return {"result": "error in initialising model", "relevant-chunk": docs}
+    torch.cuda.empty_cache()
+    gc.collect()
     query = prompt
     db = Chroma(persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/1200f839-aa61-4ef0-a9e5-af92aa79347f", embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
     #Retrieve relevant documents in databse and form a prompt
-    prompt,docs = get_similar_answer(vector = db,query = query,model =  model_name)
+    prompt,docs = get_similar_answer(vector = db,query = query,model = model_name)
     try:
+        tokenizer, model = load_model.llm_model_init(model_name, True)
         completion = load_model.llm_chat(model_name, prompt, tokenizer, model, query)
     except Exception as e:
         print(e)
-        print('error in loading model', model_name_str)
+        print('error in loading model', model_name)
         completion = "error in loading model"
     result = {"result": completion,"relevant-chunk": docs}
     return result     
 
 
 #Processing requests in the queue
-def process_queue():
-    while True:
-        if not request_queue.empty():
-            data =  request_queue.get()
-            start_time = round(time.time() * 1000)
-            chat_query = data['prompt']
-            chat_query = chat_query.strip()
-            llm_model = data['model_name']
-            result = process(chat_query, llm_model)
-            result = result.strip()
-            end_time = round(time.time() * 1000)
-            time_ms = end_time - start_time
+def process_queue(data:dict):
+    start_time = round(time.time() * 1000)
+    chat_query = data['prompt']
+    chat_query = chat_query.strip()
+    llm_model = data['model_name']
+    result = process(chat_query, llm_model)
+    result = {k: v.strip() for k, v in result.items()}
+    end_time = round(time.time() * 1000)
+    time_ms = end_time - start_time
 
-            # insert the query & answer to database
-            global sql_conn
-            cursor = sql_conn.cursor()
-            cursor.execute("INSERT INTO chat_history (query, model, answer, millisecs) VALUES (?, ?, ?, ?)", (chat_query, llm_model, result, time_ms))
-            sql_conn.commit()
-            cursor.close()
+    # insert the query & answer to database
+    global sql_conn
+    cursor = sql_conn.cursor()
+    cursor.execute("INSERT INTO chat_history (query, model, answer, millisecs) VALUES (?, ?, ?, ?)", (chat_query, llm_model, result['result'], time_ms))
+    sql_conn.commit()
+    cursor.close()
 
-            data['response_queue'].put( result )
-            request_queue.task_done()
 
 
 def create_sqlite_db():
@@ -215,14 +196,8 @@ app.add_middleware(
 
 #Accept foreground chat requests and place them in the queue
 @app.post('/chat')
-async def chat(data: dict):
-    global model_name_str 
-    global user_id
-    response_queue = Queue() 
-    data['response_queue'] = response_queue
-    request_queue.put(data)
-    # 等待处理结果
-    result = response_queue.get()
+def chat(data: dict):
+    return process_queue(data)
     return result
 
 #Load database
@@ -331,4 +306,4 @@ def query_history():
 
 if __name__ == '__main__':
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=6006)
+    uvicorn.run(app, host="0.0.0.0", port=6008)

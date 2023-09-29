@@ -4,7 +4,7 @@ llm:
     GPTEALL_MODEL: ggml-gpt4all-j-v1.3-groovy.bin
     Vicuna-13B: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/vicuna-13b-v1.3
     baichuan-7b: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Baichuan-7B
-    mbt-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/mpt-7b-chat
+    mpt-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/mpt-7b-chat
     llama2-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Llama-2-7b-chat-hf
     gpu: True
     embedding: all-MiniLM-L6-v2
