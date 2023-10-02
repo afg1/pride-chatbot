@@ -59,24 +59,23 @@ def delete_by_file(vector,filname:str):
 def vector_by_id(path_id:str):
         directory = "/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/"+path_id
         vector = Chroma(persist_directory=directory, embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
-        data = vector.get()['metadatas']
-        unique_data = []
-        seen = set()
-
-        for item in data:
-            identifier = item['source']
-            if identifier not in seen:
-                seen.add(identifier)
-                unique_data.append(item)
-        vector.source = unique_data
+        # data = vector.get()['metadatas']
+        # unique_data = []
+        # seen = set()
+        #
+        # for item in data:
+        #     identifier = item['source']
+        #     if identifier not in seen:
+        #         seen.add(identifier)
+        #         unique_data.append(item)
+        # vector.source = unique_data
         return vector
 
 
 #Search for relevant content in the vector based on the query and build a prompt
 def get_similar_answer(vector, query,model) -> str:
     #prompt template, you can add external strings to { }
-    if  model == 'llama2-chat':
-        
+    if  model == 'llama2-chat' or model == 'llama2-13b-chat':
         prompt_template = """
             <s>[INST]
             <<SYS>>
@@ -101,7 +100,10 @@ def get_similar_answer(vector, query,model) -> str:
         template=prompt_template,
         input_variables=["context", "question"]
     )
-    docs = vector.similarity_search_with_score(query)       
+
+    docs = vector.similarity_search_with_score(query)
+    print(docs)
+    print('-------------------------------------------------------')
     #put the relevant document into context
     document = ''
     count = 0
@@ -121,7 +123,7 @@ def process(prompt, model_name):
     torch.cuda.empty_cache()
     gc.collect()
     query = prompt
-    db = Chroma(persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/1200f839-aa61-4ef0-a9e5-af92aa79347f", embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
+    db = Chroma(persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/9ad03db8-cb91-4e78-b4ab-cc9b052030fa", embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
     #Retrieve relevant documents in databse and form a prompt
     prompt,docs = get_similar_answer(vector = db,query = query,model = model_name)
     try:
@@ -145,6 +147,7 @@ def process_queue(data:dict):
     result = {k: v.strip() for k, v in result.items()}
     end_time = round(time.time() * 1000)
     time_ms = end_time - start_time
+    return result
 
     # insert the query & answer to database
     global sql_conn
@@ -174,10 +177,7 @@ def create_sqlite_db():
 
 
 create_sqlite_db()
-
-processing_thread = threading.Thread(target= process_queue)
-processing_thread.daemon = True
-processing_thread.start()
+vector = vector_by_id('9ad03db8-cb91-4e78-b4ab-cc9b052030fa')
 
 
 # interface
@@ -204,7 +204,7 @@ def chat(data: dict):
 @app.get('/load')
 async def load():
     #load the database according to uuid
-    vector = vector_by_id('1200f839-aa61-4ef0-a9e5-af92aa79347f')
+    vector = vector_by_id('9ad03db8-cb91-4e78-b4ab-cc9b052030fa')
     return JSONResponse(content=vector.source)
 
 #Update database
@@ -224,14 +224,14 @@ async def upload(file: UploadFile = File(...)):
         db= Chroma.from_documents(
                 documents=docs, 
                 embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"),
-                persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/1200f839-aa61-4ef0-a9e5-af92aa79347f"
+                persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/9ad03db8-cb91-4e78-b4ab-cc9b052030fa"
                 )
         db.persist()
         #file.save(os.path.join(app.config['UPLOAD_FOLDER'],file.filename))
         with open(UPLOAD_FOLDER+'/'+file.filename, 'w', encoding='utf-8') as save_file:
             save_file.write(content)
         return jsonify({'result':"update successful"})
-        vector = vector_by_id('1200f839-aa61-4ef0-a9e5-af92aa79347f')
+        vector = vector_by_id('9ad03db8-cb91-4e78-b4ab-cc9b052030fa')
     else:
         return jsonify({'result':'No markdown file part in the request.'}), 400
         
@@ -244,7 +244,7 @@ def download_file(filename:str):
 #Delete database
 @app.post('/delete')
 async def delete(item: dict):
-    vector = vector_by_id('1200f839-aa61-4ef0-a9e5-af92aa79347f')
+    vector = vector_by_id('9ad03db8-cb91-4e78-b4ab-cc9b052030fa')
     filename = item["filename"]
     os.remove(filename)
     print(filename)

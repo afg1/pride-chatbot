@@ -134,7 +134,18 @@ def llm_model_init(choice: str, gpu: bool) :
         return tokenizer,model
     elif choice =='llama2-chat': #llama2-7b-chat
         llama2_path = cfg['llm']['llama2-chat']
-        tokenizer = AutoTokenizer.from_pretrained(llama2_path,trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path,trust_remote_code=True,model_max_length=512)
+        model = transformers.pipeline(
+        "text-generation",
+        model=llama2_path,
+        torch_dtype=torch.float16,
+        device_map="auto",
+        trust_remote_code=True
+        )
+        return tokenizer,model
+    elif choice =='llama2-13b-chat': #llama2-7b-chat
+        llama2_path = cfg['llm']['llama2-13b-chat']
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path,trust_remote_code=True,model_max_length=512)
         model = transformers.pipeline(
         "text-generation",
         model=llama2_path,
@@ -168,7 +179,23 @@ def llm_chat(choice:str,prompt:str,tokenizer,model,query:str):
                     top_k=1,
                     num_return_sequences=1,
                     eos_token_id=tokenizer.eos_token_id,
-                    max_length=1024,
+                    max_length=1124,
+                    )
+        print(out)
+        # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
+        # content_start = start_index + len("###Question:"+prompt) + 1
+        # end_index = out[0]['generated_text'].find("###", content_start)
+        # result = out[0]['generated_text'][content_start:end_index].strip()
+        result =  out[0]['generated_text'].replace(prompt, "", 1).strip()
+    elif choice == 'llama2-13b-chat':  #chat with llama2-chat
+        # inputs = tokenizer(prompt,return_tensors="pt").to("cuda:0")
+        out =  model(
+                    prompt,
+                    do_sample=True,
+                    top_k=1,
+                    num_return_sequences=1,
+                    eos_token_id=tokenizer.eos_token_id,
+                    max_length=1124,
                     )
         print(out)
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
