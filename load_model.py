@@ -145,7 +145,7 @@ def llm_model_init(choice: str, gpu: bool) :
         return tokenizer,model
     elif choice =='llama2-13b-chat': #llama2-7b-chat
         llama2_path = cfg['llm']['llama2-13b-chat']
-        tokenizer = AutoTokenizer.from_pretrained(llama2_path,trust_remote_code=True,model_max_length=512)
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path,trust_remote_code=True,model_max_length=1024)
         model = transformers.pipeline(
         "text-generation",
         model=llama2_path,
@@ -179,7 +179,7 @@ def llm_chat(choice:str,prompt:str,tokenizer,model,query:str):
                     top_k=1,
                     num_return_sequences=1,
                     eos_token_id=tokenizer.eos_token_id,
-                    max_length=1124,
+                    max_length=2400,
                     )
         print(out)
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
@@ -195,7 +195,7 @@ def llm_chat(choice:str,prompt:str,tokenizer,model,query:str):
                     top_k=1,
                     num_return_sequences=1,
                     eos_token_id=tokenizer.eos_token_id,
-                    max_length=1124,
+                    max_length=2400,
                     )
         print(out)
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
