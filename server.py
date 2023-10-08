@@ -1,3 +1,6 @@
+from slowapi.errors import RateLimitExceeded
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
 from peewee import fn
 from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
 from langchain.docstore.document import Document
@@ -133,8 +136,11 @@ def process(prompt, model_name):
     # Retrieve relevant documents in databse and form a prompt
     prompt, docs = get_similar_answer(vector=db, query=query, model=model_name)
     try:
-        tokenizer, model = load_model.llm_model_init(model_name, True)
-        completion = load_model.llm_chat(model_name, prompt, tokenizer, model, query)
+        # tokenizer, model = load_model.llm_model_init(model_name, True)
+        if model_name == 'llama2-13b-chat':
+            completion = load_model.llm_chat(model_name, prompt, lltokenizer, llmodel, query)
+        else:
+            completion = load_model.llm_chat(model_name, prompt, glmtokenizer, glmmodel, query)
     except Exception as e:
         print(e)
         print('error in loading model', model_name)
@@ -166,8 +172,15 @@ vector = vector_by_id('9ad03db8-cb91-4e78-b4ab-cc9b052030fa')
 
 # interface
 
+limiter = Limiter(key_func=get_remote_address)
 # Create an app instance
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+lltokenizer, llmodel = load_model.llm_model_init('llama2-13b-chat', True)
+glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
 
 # CORS config
 app.add_middleware(
