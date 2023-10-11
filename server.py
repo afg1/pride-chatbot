@@ -178,7 +178,6 @@ app = FastAPI()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-
 lltokenizer, llmodel = load_model.llm_model_init('llama2-13b-chat', True)
 glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
 
@@ -196,6 +195,41 @@ app.add_middleware(
 @app.post('/chat')
 def chat(data: dict):
     return process_queue(data)
+
+
+@app.post('/saveBenchmark')
+def savebenchmark(data: dict):
+    # insert the query & answer to database
+    ChatBenchmark.create(query=data['query'], model_a=data['model_a'], model_b=data['model_b'],
+                         answer_a=data['answer_a'], answer_b=data['answer_b'],
+                         time_a=data['time_a'], time_b=data['time_b'],
+                         winner=data['winner'], judge=data['judge'])
+
+
+@app.get('/getBenchmark')
+def getbenchmark(page_num: int = 0, items_per_page: int = 100):
+    sql_results = ChatBenchmark.select(ChatBenchmark.query, ChatBenchmark.model_a, ChatBenchmark.model_b,
+                                       ChatBenchmark.answer_a, ChatBenchmark.answer_b,
+                                       ChatBenchmark.time_a, ChatBenchmark.time_b,
+                                       ChatBenchmark.winner, ChatBenchmark.judge) \
+        .paginate(page_num, items_per_page)
+
+    results = []
+    for row in sql_results:
+        result_dict = {
+            'query': row.query,
+            'model_a': row.model_a,
+            'answer_a': row.answer_a,
+            'model_b': row.model_b,
+            'answer_b': row.answer_b,
+            'time_a': row.time_a,
+            'time_b': row.time_b,
+            'winner':row.winner,
+            'judge': row.judge
+        }
+        results.append(result_dict)
+
+    return results
 
 
 # Load database
@@ -263,7 +297,7 @@ async def model_choice(item: dict):
 def query_history(query: str, page_num: int = 0, items_per_page: int = 100):
     sql_results = ChatHistory.select(ChatHistory.query, ChatHistory.model, ChatHistory.answer,
                                      fn.AVG(ChatHistory.millisecs)) \
-        .where(ChatHistory.query == query).group_by(ChatHistory.query, ChatHistory.model, ChatHistory.answer)\
+        .where(ChatHistory.query == query).group_by(ChatHistory.query, ChatHistory.model, ChatHistory.answer) \
         .paginate(page_num, items_per_page)
 
     results = []
