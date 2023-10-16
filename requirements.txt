@@ -11,4 +11,6 @@ chromadb
 einops
 xformers
 peewee
+bs4
+markdown
 
