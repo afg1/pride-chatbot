@@ -259,8 +259,7 @@ async def upload(file: UploadFile = File(...)):
 
         db = Chroma.from_documents(
             documents=docs,
-            #embedding=HuggingFaceEmbeddings(model_name=util.cn),
-            embedding=HuggingFaceEmbeddings(model_name=util.ebi),
+            embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
             persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/9ad03db8-cb91-4e78-b4ab-cc9b052030fa"
         )
         db.persist()
@@ -286,11 +285,9 @@ async def delete(item: dict):
     filename = item["filename"]
     os.remove(filename)
     print(filename)
-    result =  delete_by_file(vector, filename)
+    result = delete_by_file(vector, filename)
     return result
 
-
-a+b
 # Change model
 @app.post('/model_choice')
 async def model_choice(item: dict):
