@@ -13,7 +13,7 @@ llm:
 vector:
     chunk_size: 500
     chunk_overlap: 50
-    api_store: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/
+    api_store: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/pride-chatbot/vector/
     cli_store: ./vector/
 
 
