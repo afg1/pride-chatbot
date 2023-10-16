@@ -21,6 +21,8 @@ from queue import Queue
 import threading
 import time
 import sqlite3
+import markdown
+from bs4 import BeautifulSoup
 
 from chat_history import ChatHistory
 
@@ -65,7 +67,7 @@ def delete_by_file(vector, filname: str):
 def vector_by_id(path_id: str):
     directory = "/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/" + path_id
     vector = Chroma(persist_directory=directory,
-                    embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
+                    embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     # data = vector.get()['metadatas']
     # unique_data = []
     # seen = set()
@@ -132,7 +134,7 @@ def process(prompt, model_name):
     query = prompt
     db = Chroma(
         persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/9ad03db8-cb91-4e78-b4ab-cc9b052030fa",
-        embedding_function=HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2'))
+        embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     # Retrieve relevant documents in databse and form a prompt
     prompt, docs = get_similar_answer(vector=db, query=query, model=model_name)
     try:
@@ -248,14 +250,17 @@ async def upload(file: UploadFile = File(...)):
         content = file.read().decode('utf-8')
         sections = extract_sections(content=content)
         for section in sections:
+            html = markdown.markdown(section)
+            soup = BeautifulSoup(html,'html.parser')
             new_doc = Document(
-                page_content=section.strip(),
+                page_content=soup.get_text(),
                 metadata={'source': UPLOAD_FOLDERs + '/' + file.filename})
             docs.append(new_doc)
 
         db = Chroma.from_documents(
             documents=docs,
-            embedding=HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2"),
+            #embedding=HuggingFaceEmbeddings(model_name=util.cn),
+            embedding=HuggingFaceEmbeddings(model_name=util.ebi),
             persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-chatbot/vector_store/9ad03db8-cb91-4e78-b4ab-cc9b052030fa"
         )
         db.persist()
@@ -281,10 +286,11 @@ async def delete(item: dict):
     filename = item["filename"]
     os.remove(filename)
     print(filename)
-    result = delete_by_file(vector, filename)
+    result =  delete_by_file(vector, filename)
     return result
 
 
+a+b
 # Change model
 @app.post('/model_choice')
 async def model_choice(item: dict):
