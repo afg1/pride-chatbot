@@ -33,7 +33,7 @@ def import_file(data_folder: str) -> list:
             print (root,filename)
             if filename.endswith(".md"):
                 path = Path(filename)  # 替换为你的markdown文件路径
-                content = file.read().decode('utf-8')
+                content = path.read_text()
                 sections = extract_sections(content)
                 for section in sections:
                     html = markdown.markdown(section)
