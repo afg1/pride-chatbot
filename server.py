@@ -132,7 +132,7 @@ def process(prompt, model_name):
     gc.collect()
     query = prompt
     db = Chroma(
-        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369",
+        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370",
         embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     # Retrieve relevant documents in databse and form a prompt
     prompt, docs = get_similar_answer(vector=db, query=query, model=model_name)
@@ -169,7 +169,7 @@ def process_queue(data: dict):
     return result
 
 
-vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
 
 # interface
 
@@ -237,7 +237,7 @@ def getbenchmark(page_num: int = 0, items_per_page: int = 100):
 @app.get('/load')
 async def load():
     # load the database according to uuid
-    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
     return JSONResponse(content=vector.source)
 
 
@@ -259,14 +259,14 @@ async def upload(file: UploadFile = File(...)):
         db = Chroma.from_documents(
             documents=docs,
             embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
-            persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
+            persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
         )
         db.persist()
         # file.save(os.path.join(app.config['UPLOAD_FOLDER'],file.filename))
         with open(UPLOAD_FOLDER + '/' + file.filename, 'w', encoding='utf-8') as save_file:
             save_file.write(content)
         return jsonify({'result': "update successful"})
-        vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+        vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
     else:
         return jsonify({'result': 'No markdown file part in the request.'}), 400
 
@@ -280,7 +280,7 @@ def download_file(filename: str):
 # Delete database
 @app.post('/delete')
 async def delete(item: dict):
-    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
     filename = item["filename"]
     os.remove(filename)
     print(filename)
