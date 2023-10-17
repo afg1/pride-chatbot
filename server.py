@@ -65,7 +65,7 @@ def delete_by_file(vector, filname: str):
 
 # Load the specified private database (vector) by specifying the id
 def vector_by_id(path_id: str):
-    directory = "/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/pride-chatbot/vector/" + path_id
+    directory = "./vector/" + path_id
     vector = Chroma(persist_directory=directory,
                     embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     # data = vector.get()['metadatas']
@@ -132,7 +132,7 @@ def process(prompt, model_name):
     gc.collect()
     query = prompt
     db = Chroma(
-        persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/pride-chatbot/vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369",
+        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369",
         embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     # Retrieve relevant documents in databse and form a prompt
     prompt, docs = get_similar_answer(vector=db, query=query, model=model_name)
@@ -259,7 +259,7 @@ async def upload(file: UploadFile = File(...)):
         db = Chroma.from_documents(
             documents=docs,
             embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
-            persist_directory="/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/pride-chatbot/vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
+            persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
         )
         db.persist()
         # file.save(os.path.join(app.config['UPLOAD_FOLDER'],file.filename))
