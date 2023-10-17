@@ -110,7 +110,7 @@ def get_similar_answer(vector, query, model) -> str:
         input_variables=["context", "question"]
     )
 
-    docs = vector.similarity_search_with_score(query)
+    docs = vector.similarity_search_with_score(query,k=4)
     print(docs)
     print('-------------------------------------------------------')
     # put the relevant document into context
@@ -118,10 +118,9 @@ def get_similar_answer(vector, query, model) -> str:
     count = 0
     context = []
     for d in docs:
-        if d[1] < 1:
-            context.append(d[0].page_content)
-            count += 1
-            document = document + str(count) + ':' + d[0].page_content + '\n*******\n'
+        context.append(d[0].page_content)
+        count += 1
+        document = document + str(count) + ':' + d[0].page_content + '\n*******\n'
     # add the question input by user ande the relevant into prompt
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document
