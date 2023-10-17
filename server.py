@@ -110,7 +110,7 @@ def get_similar_answer(vector, query, model) -> str:
         input_variables=["context", "question"]
     )
 
-    docs = vector.similarity_search_with_score(query,k=4)
+    docs = vector.similarity_search_with_score(query)
     print(docs)
     print('-------------------------------------------------------')
     # put the relevant document into context
