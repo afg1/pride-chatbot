@@ -1,8 +1,14 @@
 ## PRIDE Submission Tool
 
-The PRIDE Submission Tool is the main tool used to submit proteomics datasets to [PRIDE Archive](https://www.ebi.ac.uk/pride/archive/). This tool has been implemented as a wizard, guiding submitters through a set of simple steps to complete each dataset submission.
+The PRIDE Submission Tool (also know as PX Submission Tool) is the main tool used to submit proteomics datasets to [PRIDE Archive](https://www.ebi.ac.uk/pride/archive/). This tool has been implemented as a wizard, guiding submitters through a set of simple steps to complete each dataset submission.
 
 [DOWNLOAD TOOL](https://ftp.pride.ebi.ac.uk/pub/databases/pride/resources/tools/submission-tool/latest/desktop/px-submission-tool.zip)
+
+PRIDE Submission Tool is a Java based application and requires Java 8 or higher to run. The tool is available for Windows, Mac and Linux operating systems. The latest version of the tool is releasd on a zip file. Inside the zip file a folder with a jar file and a lib folder is present. The lib folder contains all the required libraries for the tool to run. The jar file is the executable file for the tool. The tool can be run by double clicking on the jar file or by running the following command in the terminal.
+
+    java -jar px-submission-tool-{version}.jar
+
+Below are the steps for using the PRIDE submission tool or PX tool
 
 ## Login Panel
 
@@ -69,6 +75,13 @@ If there are multiple ‘RESULT’ files the tool maps the other files – ‘RA
 
 If the automatic mapping is partial only or does not apply, the submitter is asked to manually assign manually the relationships between the files.
 
+## Checksum calculation
+
+You have the option of calculating checksum for the files added. Please
+press yes or no if you want to calculate checksum. It is highly recommended to calculate checksum but if the file is very large you can skip or pass through checksum calculation
+by pressing no. Please press Next button after that.
+
+
 ## Additional submission metadata
 
 Additional metadata need be provided for each ‘RESULT’ file in the case of a **Complete** submission, and what is needed is the same whether mzTab or mzIdentML files are used.
@@ -89,7 +102,7 @@ Each of this pieces of information should be provided using CV terms from a drop
 > Note: If you have more than one ‘RESULT’ file then you can pick the ‘Apply to all’ box for replicating species and tissue information (if applicable) instead of replicating this information many times.
 
 
-In most cases the metadata annotation you may be looking for can be available in the drop-down menu, since the elements of the drop-down menus have been selected based on frequency of these terms in existing datasets. However, sometimes the annotations you are looking for may not be available from the drop-down lists.
+In most cases the metadata annotation you may be looking for can be available in the drop-down menu, since the elements of the drop-down menus have been selected based on the frequency of these terms in existing datasets. However, sometimes the annotations you are looking for may not be available from the drop-down lists.
 
 If that’s the case, you have to select the OLS (Ontology Lookup Service) panel and search for the corresponding annotation you want to provide. In the case of the more extensive searches you need to click on the “other” options on the bottom of the drop-down menu. For instance, if you have samples coming from e.g. the fish Grayling (Thymallus thymallus) this species name is not available from the drop-down list menu. You have to click on _Other species_ and search for 'Thymallus thymallus' in the OLS panel.
 
