@@ -118,9 +118,10 @@ def get_similar_answer(vector, query, model) -> str:
     count = 0
     context = []
     for d in docs:
-        context.append(d[0].page_content)
-        count += 1
-        document = document + str(count) + ':' + d[0].page_content + '\n*******\n'
+        if count < 2:
+            context.append(d[0].page_content)
+            count += 1
+            document = document + str(count) + ':' + d[0].page_content + '\n*******\n'
     # add the question input by user ande the relevant into prompt
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document
@@ -165,6 +166,8 @@ def process_queue(data: dict):
 
     # insert the query & answer to database
     ChatHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
+
+    result['timems']=time_ms
 
     return result
 
