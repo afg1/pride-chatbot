@@ -25,6 +25,7 @@ import markdown
 from bs4 import BeautifulSoup
 
 from chat_history import ChatHistory
+from chat_history import ChatBenchmark
 
 # global variables
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
