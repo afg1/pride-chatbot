@@ -266,36 +266,38 @@ async def load():
 
 # Update database
 @app.post("/upload")
-async def upload(file: UploadFile = File(...)):
-    if file.filename.endswith(".md"):
-        docs = []
-        content = file.read().decode('utf-8')
-        sections = extract_sections(content=content)
-        parent_directory = os.path.dirname(file.filename)
-        directory_name = os.path.basename(parent_directory)
-        for section in sections:
-            title = extract_title(content=section)
-            html = markdown.markdown(section)
-            soup = BeautifulSoup(html,'html.parser')
-            new_doc = Document(
-                page_content=soup.get_text(),
-                metadata = {'source':UPLOAD_FOLDER+'/'+file.filename,
-                            'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
-                           })
-            docs.append(new_doc)
-        if len(docs)!=0:
-            db = Chroma.from_documents(
-                documents=docs,
-                embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
-                persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-            )
-            db.persist()
-        directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
-        if not os.path.exists(directory):
+async def upload(files: List[UploadFile] = File(...)):
+    for file in files:
+        if file.filename.endswith(".md"):
+            docs = []
+            content_bytes = await file.read()
+            content = content_bytes.decode('utf-8')
+            sections = extract_sections(content=content)
+            parent_directory = os.path.dirname(file.filename)
+            directory_name = os.path.basename(parent_directory)
+            for section in sections:
+                title = extract_title(content=section)
+                html = markdown.markdown(section)
+                soup = BeautifulSoup(html,'html.parser')
+                new_doc = Document(
+                    page_content=soup.get_text(),
+                    metadata = {'source':UPLOAD_FOLDER+'/'+file.filename,
+                                'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
+                               })
+                docs.append(new_doc)
+            if len(docs)!=0:
+                db = Chroma.from_documents(
+                    documents=docs,
+                    embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
+                    persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
+                )
+                db.persist()
             directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
-            os.makedirs(directory)
-        with open(UPLOAD_FOLDER+'/'+file.filename, 'w', encoding='utf-8') as save_file:
-            save_file.write(content)
+            if not os.path.exists(directory):
+                directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+                os.makedirs(directory)
+            with open(UPLOAD_FOLDER+'/'+file.filename, 'w', encoding='utf-8') as save_file:
+                save_file.write(content)
     return json.dumps({'result':"update successful"})
 
 
