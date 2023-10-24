@@ -39,10 +39,17 @@ UPLOAD_FOLDER = './documents/user_upload'
 
 # functions
 
+#extrace ##title
+def extract_title(content:str)-> str:
+    titles = re.findall(r'^(#+)\s(.+)$',content, re.MULTILINE)
+    for _, title in titles:
+        formatted_title = title.replace(" ", "_")
+    return formatted_title
 # Split the content of the markdown file
 def extract_sections(content: str) -> list:
-    pattern = r"\n## |\n### |\n#### |\Z"
+    pattern = r"(\n# |\n## |\n### |\n#### |\Z)"
     sections = re.split(pattern, content)
+    sections = [sections[i] + (sections[i + 1] if i + 1 < len(sections) else '') for i in range(1, len(sections), 2)]
     sections = [s.strip() for s in sections if s.strip()]
     return sections
 
@@ -58,26 +65,25 @@ def delete_by_file(vector, filname: str):
     if len(ids) != 0:
         vector.delete(ids)
         vector.persist()
-        return jsonify({"result": "success"})
+        return json.dumps({"result": "success"})
     else:
-        return jsonify({"result": "Can't find the file"})
+        return json.dumps({"result": "Can't find the file"})
 
 
 # Load the specified private database (vector) by specifying the id
 def vector_by_id(path_id: str):
     directory = "./vector/" + path_id
-    vector = Chroma(persist_directory=directory,
-                    embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
-    # data = vector.get()['metadatas']
-    # unique_data = []
-    # seen = set()
-    #
-    # for item in data:
-    #     identifier = item['source']
-    #     if identifier not in seen:
-    #         seen.add(identifier)
-    #         unique_data.append(item)
-    # vector.source = unique_data
+    vector = Chroma(persist_directory=directory,embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
+    data = vector.get()['metadatas']
+    unique_data = []
+    seen = set()
+    
+    for item in data:
+        identifier = item['source']
+        if identifier not in seen:
+            seen.add(identifier)
+            unique_data.append(item)
+    vector.source = unique_data
     return vector
 
 
@@ -118,10 +124,9 @@ def get_similar_answer(vector, query, model) -> str:
     count = 0
     context = []
     for d in docs:
-        if count < 2:
-            context.append(d[0].page_content)
-            count += 1
-            document = document + str(count) + ':' + d[0].page_content + '\n*******\n'
+        context.append(d[0].page_content)
+        count += 1
+        document = document + str(count) + ':' + d[0].page_content +'\n url:'+d[0].metadata['title']+'\n*******\n'
     # add the question input by user ande the relevant into prompt
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document
@@ -200,6 +205,21 @@ app.add_middleware(
 def chat(data: dict):
     return process_queue(data)
 
+@app.get('/delete_all')
+def chat():
+    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
+    vector.delete_collection()
+    vector.persist()
+    return {"status": "success"}
+
+@app.post('/delete')
+async def delete(item: dict):
+    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
+    filename = item["filename"]
+    #os.remove(filename)
+    print(filename)
+    result = delete_by_file(vector, filename)
+    return result
 
 @app.post('/saveBenchmark')
 def savebenchmark(data: dict):
@@ -251,27 +271,32 @@ async def upload(file: UploadFile = File(...)):
         docs = []
         content = file.read().decode('utf-8')
         sections = extract_sections(content=content)
+        parent_directory = os.path.dirname(file.filename)
+        directory_name = os.path.basename(parent_directory)
         for section in sections:
+            title = extract_title(content=section)
             html = markdown.markdown(section)
             soup = BeautifulSoup(html,'html.parser')
             new_doc = Document(
                 page_content=soup.get_text(),
-                metadata={'source': UPLOAD_FOLDERs + '/' + file.filename})
+                metadata = {'source':UPLOAD_FOLDER+'/'+file.filename,
+                            'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
+                           })
             docs.append(new_doc)
-
-        db = Chroma.from_documents(
-            documents=docs,
-            embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
-            persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-        )
-        db.persist()
-        # file.save(os.path.join(app.config['UPLOAD_FOLDER'],file.filename))
-        with open(UPLOAD_FOLDER + '/' + file.filename, 'w', encoding='utf-8') as save_file:
+        if len(docs)!=0:
+            db = Chroma.from_documents(
+                documents=docs,
+                embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
+                persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
+            )
+            db.persist()
+        directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+        if not os.path.exists(directory):
+            directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+            os.makedirs(directory)
+        with open(UPLOAD_FOLDER+'/'+file.filename, 'w', encoding='utf-8') as save_file:
             save_file.write(content)
-        return jsonify({'result': "update successful"})
-        vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
-    else:
-        return jsonify({'result': 'No markdown file part in the request.'}), 400
+    return json.dumps({'result':"update successful"})
 
 
 # Download database
@@ -288,6 +313,7 @@ async def delete(item: dict):
     os.remove(filename)
     print(filename)
     result = delete_by_file(vector, filename)
+    del vector
     return result
 
 # Change model
