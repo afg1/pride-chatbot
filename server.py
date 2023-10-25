@@ -44,6 +44,7 @@ UPLOAD_FOLDER = './documents/user_upload'
 def extract_title(content:str)-> str:
     titles = re.findall(r'^(#+)\s(.+)$',content, re.MULTILINE)
     for _, title in titles:
+        title = title.lower()
         formatted_title = title.replace(" ", "_")
     return formatted_title
 # Split the content of the markdown file
@@ -127,7 +128,7 @@ def get_similar_answer(vector, query, model) -> str:
     for d in docs:
         context.append(d[0].page_content)
         count += 1
-        document = document + str(count) + ':' + d[0].page_content +'\n url:'+d[0].metadata['title']+'\n*******\n'
+        document = document + str(count) + ':' + d[0].page_content +'\n [link]('+d[0].metadata['title']+')\n*******\n'
     # add the question input by user ande the relevant into prompt
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document
