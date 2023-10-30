@@ -9,6 +9,8 @@ from pathlib import Path
 import markdown
 from bs4 import BeautifulSoup
 
+UPLOAD_FOLDER = './documents/user_upload'
+
 # create vector database from one folder directory
 def create_and_save(file_path:str):
     file_id = str(uuid.uuid4())
