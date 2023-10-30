@@ -26,13 +26,14 @@ def create_and_save(file_path:str):
 # import all markdown files in the folder and then do the segmentation
 def import_file(data_folder: str) -> list:
     for root, dirs, files in os.walk(data_folder):
-        for file in files:
-            if file.endswith(".md"):
+        for filename in files:
+            fullPath = os.path.join(root, filename)
+            if filename.endswith(".md"):
                 docs = []
-                content_bytes = open(file).read()
-                content = content_bytes.decode('utf-8')
+                print(filename)
+                content = open(fullPath, 'r', encoding='utf-8').read()
                 sections = extract_sections(content=content)
-                parent_directory = os.path.dirname(file.filename)
+                parent_directory = os.path.dirname(filename)
                 directory_name = os.path.basename(parent_directory)
                 for section in sections:
                     title = extract_title(content=section)
@@ -51,14 +52,13 @@ def import_file(data_folder: str) -> list:
                         persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
                     )
                     db.persist()
-                directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+                directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(filename))
                 if not os.path.exists(directory):
-                    directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+                    directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(filename))
                     os.makedirs(directory)
-                with open(UPLOAD_FOLDER + '/' + file.filename, 'w', encoding='utf-8') as save_file:
+                with open(UPLOAD_FOLDER + '/' + filename, 'w', encoding='utf-8') as save_file:
                     save_file.write(content)
     return docs
-
 #extrace ##title
 def extract_title(content:str)-> str:
     titles = re.findall(r'^(#+)\s(.+)$',content, re.MULTILINE)
