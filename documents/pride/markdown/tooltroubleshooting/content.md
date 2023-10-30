@@ -73,3 +73,7 @@ contact the PRIDE support team by attaching the log file.
 
 Usually the drop-down list would consist of all the common modifications used . If not so you can traverse to the bottom of the list and select Others.
 That would open up the OLS Dialog where you can search by Ontology names or id and select the desired modifications.
+
+
+
+

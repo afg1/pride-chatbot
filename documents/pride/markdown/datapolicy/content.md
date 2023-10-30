@@ -4,11 +4,11 @@ Version 1.0 (May 2022)
 
 ### General guidelines for submitted datasets
 
-Submitters of proteomics datasets to the PRIDE database should be aware of the following aspects of our data policy.
+Submitters of proteomics datasets to the PRoteomics IDEntifications(PRIDE) database should be aware of the following aspects of our data policy.
 
 A) General statements
 
-- The PRIDE database (as part of ProteomeXchange, and also as an EMBL-EBI resource) has a uniform policy of free and unrestricted access to all the datasets deposited once they are released to the public.
+- The PRoteomics IDEntifications(PRIDE) database (as part of ProteomeXchange, and also as an EMBL-EBI resource) has a uniform policy of free and unrestricted access to all the datasets deposited once they are released to the public.
 
 - **Dataset Licenses**: The terms of the Creative Commons Public Domain (CC0) License apply to all PRIDE datasets submitted from June 2018. In this case, all submitters have specifically agreed to these terms during the submission process. All submitted datasets before that date (June 2018) are subject to the EBI terms of use (https://www.ebi.ac.uk/about/terms-of-use).
 

@@ -1,4 +1,4 @@
-## PRIDE ( PRotein Identificatins ) Resources Documentation
+## PRoteomics IDEntifications ( PRIDE ) Resources Documentation
 
 ## General Help Pages
 

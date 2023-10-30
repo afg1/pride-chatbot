@@ -1,4 +1,4 @@
-## Dataset search in PRIDE Archive
+## Dataset search in PRoteomics IDEntifications(PRIDE) Archive
 
 ## Basic term-based search
 
