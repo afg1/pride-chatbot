@@ -35,7 +35,7 @@ def import_file(data_folder: str) -> list:
                 print(filename)
                 content = open(fullPath, 'r', encoding='utf-8').read()
                 sections = extract_sections(content=content)
-                parent_directory = os.path.dirname(filename)
+                parent_directory = os.path.dirname(fullPath)
                 directory_name = os.path.basename(parent_directory)
                 for section in sections:
                     title = extract_title(content=section)
@@ -43,7 +43,7 @@ def import_file(data_folder: str) -> list:
                     soup = BeautifulSoup(html, 'html.parser')
                     new_doc = Document(
                         page_content=soup.get_text(),
-                        metadata={'source': UPLOAD_FOLDER + '/' + file.filename,
+                        metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' +filename,
                                   'title': "http://www.ebi.ac.uk/pride/markdownpage/" + directory_name + '#' + title,
                                   })
                     docs.append(new_doc)
@@ -54,11 +54,10 @@ def import_file(data_folder: str) -> list:
                         persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
                     )
                     db.persist()
-                directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(filename))
+                directory = os.path.join(UPLOAD_FOLDER, directory_name)
                 if not os.path.exists(directory):
-                    directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(filename))
                     os.makedirs(directory)
-                with open(UPLOAD_FOLDER + '/' + filename, 'w', encoding='utf-8') as save_file:
+                with open(directory + '/' + filename, 'w', encoding='utf-8') as save_file:
                     save_file.write(content)
     return docs
 #extrace ##title
