@@ -1,4 +1,4 @@
-## PRoteomics IDEntifications ( PRIDE ) Resources Documentation
+## PRIDE Resources Documentation
 
 ## General Help Pages
 
@@ -30,9 +30,15 @@
 
 - [Troubleshooting](./tooltroubleshooting)
 
+## FAQ
+
+- [FAQ](./faq)
+
+
 ## Additional Resources
 
 - [ProteomeXchange](./proteomexchange)
+- [SDRF-Proteomics](./sdrf)
 
 
 

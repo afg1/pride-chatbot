@@ -32,7 +32,6 @@ def import_file(data_folder: str) -> list:
             fullPath = os.path.join(root, filename)
             if filename.endswith(".md"):
                 docs = []
-                print(filename)
                 content = open(fullPath, 'r', encoding='utf-8').read()
                 sections = extract_sections(content=content)
                 parent_directory = os.path.dirname(fullPath)
