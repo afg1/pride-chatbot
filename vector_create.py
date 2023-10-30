@@ -27,9 +27,9 @@ def create_and_save(file_path:str):
 def import_file(data_folder: str) -> list:
     for root, dirs, files in os.walk(data_folder):
         for file in files:
-            if filename.endswith(".md"):
+            if file.endswith(".md"):
                 docs = []
-                content_bytes = await file.read()
+                content_bytes = open(file).read()
                 content = content_bytes.decode('utf-8')
                 sections = extract_sections(content=content)
                 parent_directory = os.path.dirname(file.filename)
