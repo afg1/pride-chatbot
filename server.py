@@ -126,9 +126,14 @@ def get_similar_answer(vector, query, model) -> str:
     count = 0
     context = []
     for d in docs:
-        context.append(d[0].page_content)
+        # if count==1:
+        # context.append("Other relevant questions or info follows :")
+        if count > 0:
+            context.append("Other relevant questions or info follows :" + d[0].page_content)
+        else:
+            context.append(d[0].page_content)
         count += 1
-        document = document + str(count) + ':' + d[0].page_content +'\n [link]('+d[0].metadata['title']+')\n*******\n'
+        document = document + str(count) + ':' + d[0].page_content + '\n [link](' + d[0].metadata['title'] + ')\n*******\n'
     # add the question input by user ande the relevant into prompt
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document

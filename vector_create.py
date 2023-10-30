@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 # create vector database from one folder directory
 def create_and_save(file_path:str):
     file_id = str(uuid.uuid4())
-    save_path = "./vector/"+file_id
+    save_path = "./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
     embeddings = HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2")
     docs = import_file(file_path)
     Vector= Chroma.from_documents(
@@ -20,51 +20,60 @@ def create_and_save(file_path:str):
         embedding=embeddings,
         persist_directory=save_path
     )
-    Vector.persist()
-    Vector.id = file_id
+    Vector.id = "d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
     return Vector
 
 # import all markdown files in the folder and then do the segmentation
 def import_file(data_folder: str) -> list:
-    docs = []
     for root, dirs, files in os.walk(data_folder):
         for file in files:
-            filename = os.path.join(root, file)
-            print (root,filename)
             if filename.endswith(".md"):
-                path = Path(filename)  # 替换为你的markdown文件路径
-                content = path.read_text()
-                sections = extract_sections(content)
+                docs = []
+                content_bytes = await file.read()
+                content = content_bytes.decode('utf-8')
+                sections = extract_sections(content=content)
+                parent_directory = os.path.dirname(file.filename)
+                directory_name = os.path.basename(parent_directory)
                 for section in sections:
+                    title = extract_title(content=section)
                     html = markdown.markdown(section)
                     soup = BeautifulSoup(html, 'html.parser')
                     new_doc = Document(
-                        page_content=soup.get_text())
+                        page_content=soup.get_text(),
+                        metadata={'source': UPLOAD_FOLDER + '/' + file.filename,
+                                  'title': "http://www.ebi.ac.uk/pride/markdownpage/" + directory_name + '#' + title,
+                                  })
                     docs.append(new_doc)
+                if len(docs) != 0:
+                    db = Chroma.from_documents(
+                        documents=docs,
+                        embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
+                        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
+                    )
+                    db.persist()
+                directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+                if not os.path.exists(directory):
+                    directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+                    os.makedirs(directory)
+                with open(UPLOAD_FOLDER + '/' + file.filename, 'w', encoding='utf-8') as save_file:
+                    save_file.write(content)
     return docs
 
-# used by the above import_file function to do the segmentation.
-# This function plays the role like "RecursiveCharacterTextSplitter" from LangChain.
-# But it is not good to use "RecursiveCharacterTextSplitter" to do the segmentation only according to "chunk_size".
-# I have explain the reason in "build_indexer.py" file in the function "process_documents"
+#extrace ##title
+def extract_title(content:str)-> str:
+    titles = re.findall(r'^(#+)\s(.+)$',content, re.MULTILINE)
+    for _, title in titles:
+        title = title.lower()
+        formatted_title = title.replace(" ", "_")
+    return formatted_title
+
+# Split the content of the markdown file
 def extract_sections(content: str) -> list:
-    pattern = r"\n## |\n### |\n#### |\Z"
+    pattern = r"(\n# |\n## |\n### |\n#### |\Z)"
     sections = re.split(pattern, content)
+    sections = [sections[i] + (sections[i + 1] if i + 1 < len(sections) else '') for i in range(1, len(sections), 2)]
     sections = [s.strip() for s in sections if s.strip()]
     return sections
-
-#update vector databse via REST API used in server.py, we could ignore it currently as we only use command line to do it.
-def add_with_id(data: str, path_id: str):
-    save_path = "./vector_store/" + path_id
-    embeddings = HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2")
-    doc = Document(page_content = data,metadata={"page": "0"})
-    Vector = Chroma.from_documents(
-        documents = [doc],
-        embedding=embeddings,
-        persist_directory=save_path
-    )
-    Vector.id = path_id
-    return Vector
 
 
 #main function
