@@ -162,6 +162,28 @@ def process(prompt, model_name):
     result = {"result": completion, "relevant-chunk": docs}
     return result
 
+def process_p(prompt, model_name):
+    torch.cuda.empty_cache()
+    gc.collect()
+    query = prompt
+    db = Chroma(
+        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad380",
+        embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
+    # Retrieve relevant documents in databse and form a prompt
+    prompt, docs = get_similar_answer(vector=db, query=query, model=model_name)
+    try:
+        # tokenizer, model = load_model.llm_model_init(model_name, True)
+        if model_name == 'llama2-13b-chat':
+            completion = load_model.llm_chat(model_name, prompt, lltokenizer, llmodel, query)
+        else:
+            completion = load_model.llm_chat(model_name, prompt, glmtokenizer, glmmodel, query)
+    except Exception as e:
+        print(e)
+        print('error in loading model', model_name)
+        completion = "error in loading model"
+    result = {"result": completion, "relevant-chunk": docs}
+    return result
+
 
 # Processing requests in the queue
 def process_queue(data: dict):
@@ -178,6 +200,25 @@ def process_queue(data: dict):
 
     # insert the query & answer to database
     ChatHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
+
+    result['timems']=time_ms
+
+    return result
+
+def process_pride(data: dict):
+    chat_query = data['prompt']
+    chat_query = chat_query.strip()
+    llm_model = data['model_name']
+
+    start_time = round(time.time() * 1000)
+    result = process_p(chat_query, llm_model)
+    end_time = round(time.time() * 1000)
+
+    result = {k: v.strip() for k, v in result.items()}
+    time_ms = end_time - start_time
+
+    # insert the query & answer to database
+    #ChatHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
 
     result['timems']=time_ms
 
@@ -211,6 +252,10 @@ app.add_middleware(
 @app.post('/chat')
 def chat(data: dict):
     return process_queue(data)
+
+@app.post('/pride')
+def pride(data: dict):
+    return process_pride(data)
 
 @app.get('/delete_all')
 def chat():
