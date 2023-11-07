@@ -14,6 +14,7 @@ from fastapi import FastAPI, File, UploadFile, Request, Query, HTTPException, We
 from fastapi.responses import JSONResponse, FileResponse
 from typing import List
 import json
+import uuid
 import logging
 from typing import Dict, Any
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +23,7 @@ import threading
 import time
 import sqlite3
 import markdown
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 from chat_history import ChatHistory
@@ -40,13 +42,46 @@ UPLOAD_FOLDER = './documents/user_upload'
 
 # functions
 
+# functions
+def create_visual():
+    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
+    list = vector.get()
+    first_children = []
+    second_children = []
+    for i in range(len(list['metadatas'])):
+        if i==0:
+            title =urlparse(list['metadatas'][i]['title']).fragment
+            second_children.append({'name':title,"value":list['metadatas'][i]['title']})
+        elif list['metadatas'][i]["source"]== list['metadatas'][i-1]["source"]:
+            title =urlparse(list['metadatas'][i]['title']).fragment
+            second_children.append({'name':title,"value":list['metadatas'][i]['title']})
+        elif list ['metadatas'][i]["source"]!= list['metadatas'][i-1]["source"]:
+            first_children.append(    
+                {"name":os.path.basename(os.path.dirname(list['metadatas'][i-1]["source"])),
+                 "value":list['metadatas'][i-1]['title'].split('#')[0],
+                 "children":second_children
+                })
+            second_children = []
+            title =urlparse(list['metadatas'][i]['title']).fragment
+            second_children.append({'name':title,"value":list['metadatas'][i]['title']})                             
+
+    json_data = {
+          "name": "markdown",
+          "children": first_children            
+    }                    
+    return json.dumps(json_data)
+
 #extrace ##title
 def extract_title(content:str)-> str:
     titles = re.findall(r'^(#+)\s(.+)$',content, re.MULTILINE)
     for _, title in titles:
         title = title.lower()
         formatted_title = title.replace(" ", "_")
+        formatted_title = formatted_title.replace(")", "\)")
+        if formatted_title.endswith('_'):
+            formatted_title = formatted_title[:-1]
     return formatted_title
+
 # Split the content of the markdown file
 def extract_sections(content: str) -> list:
     pattern = r"(\n# |\n## |\n### |\n#### |\Z)"
@@ -71,6 +106,24 @@ def delete_by_file(vector, filname: str):
     else:
         return json.dumps({"result": "Can't find the file"})
 
+def find_same_markdown(vector,source) -> list:
+    markdown_content = []
+    for i in source:
+        for j in range(len(vector.get()['metadatas'])):
+            if i== vector.get()['metadatas'][j]['id']:
+                markdown_content.append(vector.get()['documents'][j])
+                break
+        
+    return markdown_content 
+
+def find_source(docs) ->list:
+    source = []
+    if len(docs)!=0:
+        for d in docs:
+            source.append(d[0].metadata['id'])     
+    else:
+        source = None
+    return source 
 
 # Load the specified private database (vector) by specifying the id
 def vector_by_id(path_id: str):
@@ -90,15 +143,14 @@ def vector_by_id(path_id: str):
 
 
 # Search for relevant content in the vector based on the query and build a prompt
-def get_similar_answer(vector, query, model) -> str:
+def get_similar_answer(vector, vector_markdown, query, model) -> str:
     # prompt template, you can add external strings to { }
     if model == 'llama2-chat' or model == 'llama2-13b-chat':
         prompt_template = """
             <s>[INST]
             <<SYS>>
-             You should summerize the knowledge and provide concise answer
-            Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
-            If you does not know the answer to a question, please say I don’t know.
+            You are a helpful chatbot
+            Please answer the questions according following Knowledge with markwown format
             ###Knowledge:{context}
             <</SYS>>
              ###Question:{question}
@@ -106,9 +158,8 @@ def get_similar_answer(vector, query, model) -> str:
         """
     else:
         prompt_template = """
-            You should summerize the knowledge and provide concise answer
-            Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
-            If you does not know the answer to a question, please say I don’t know.
+            You are a helpful chatbot
+            Please answer the questions according following Knowledge with markwown format
             ###Knowledge:{context}
             ###Question:{question}
         """
@@ -121,6 +172,10 @@ def get_similar_answer(vector, query, model) -> str:
     docs = vector.similarity_search_with_score(query)
     print(docs)
     print('-------------------------------------------------------')
+    if len(docs)!=0:
+        source = find_source(docs)
+        vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+        docs_markdown = find_same_markdown(vector_markdown,source) 
     # put the relevant document into context
     document = ''
     count = 0
@@ -133,7 +188,7 @@ def get_similar_answer(vector, query, model) -> str:
         else:
             context.append(d[0].page_content)
         count += 1
-        document = document + str(count) + ':' + d[0].page_content + '\n [link](' + d[0].metadata['title'] + ')\n*******\n'
+        document = document + str(count) + ':' + docs_markdown[count-1]+'\n [link]('+d[0].metadata['title']+')\n*******\n'
     # add the question input by user ande the relevant into prompt
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document
@@ -144,11 +199,10 @@ def process(prompt, model_name):
     torch.cuda.empty_cache()
     gc.collect()
     query = prompt
-    db = Chroma(
-        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370",
-        embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
+    db =vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad370")
+    db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad369")
     # Retrieve relevant documents in databse and form a prompt
-    prompt, docs = get_similar_answer(vector=db, query=query, model=model_name)
+    prompt, docs = get_similar_answer(vector=db,vector_markdown=db_markdown,query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
@@ -259,18 +313,30 @@ def pride(data: dict):
 
 @app.get('/delete_all')
 def chat():
+    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
+    vector.delete_collection()
+    vector.persist()
+    vector= None
     vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
     vector.delete_collection()
     vector.persist()
+    vector= None
     return {"status": "success"}
 
+# Delete database
 @app.post('/delete')
 async def delete(item: dict):
     vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
+    vector_markdown = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
     filename = item["filename"]
-    #os.remove(filename)
+    os.remove(filename)
     print(filename)
     result = delete_by_file(vector, filename)
+    result = delete_by_file(vector_markdown, filename)
+    vector.persist()
+    vector_markdown.persist()
+    vector_markdown = None
+    vector = None
     return result
 
 @app.post('/saveBenchmark')
@@ -322,12 +388,20 @@ async def upload(files: List[UploadFile] = File(...)):
     for file in files:
         if file.filename.endswith(".md"):
             docs = []
+            docs_markdown = []
             content_bytes = await file.read()
             content = content_bytes.decode('utf-8')
-            sections = extract_sections(content=content)
+            sections= extract_sections(content=content)
             parent_directory = os.path.dirname(file.filename)
             directory_name = os.path.basename(parent_directory)
+            i = 0
             for section in sections:
+                id = str(uuid.uuid4())
+                new_doc_markdown = Document(
+                    page_content=section,
+                    metadata = {'source':UPLOAD_FOLDER+'/'+file.filename,
+                                'id':id
+                               })
                 title = extract_title(content=section)
                 html = markdown.markdown(section)
                 soup = BeautifulSoup(html,'html.parser')
@@ -335,15 +409,26 @@ async def upload(files: List[UploadFile] = File(...)):
                     page_content=soup.get_text(),
                     metadata = {'source':UPLOAD_FOLDER+'/'+file.filename,
                                 'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
+                                'id':id
                                })
                 docs.append(new_doc)
+                docs_markdown.append(new_doc)
+                 
             if len(docs)!=0:
-                db = Chroma.from_documents(
-                    documents=docs,
-                    embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
-                    persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-                )
+                db= Chroma.from_documents(
+                        documents=docs, 
+                        embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
+                        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
+                        )
                 db.persist()
+                db = None
+                db_markdown = Chroma.from_documents(
+                        documents=docs_markdown, 
+                        embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
+                        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
+                        )
+                db_markdown.persist()
+                db_markdown = None
             directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
             if not os.path.exists(directory):
                 directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
@@ -358,17 +443,9 @@ async def upload(files: List[UploadFile] = File(...)):
 def download_file(filename: str):
     return FileResponse(filename)
 
-
-# Delete database
-@app.post('/delete')
-async def delete(item: dict):
-    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
-    filename = item["filename"]
-    os.remove(filename)
-    print(filename)
-    result = delete_by_file(vector, filename)
-    del vector
-    return result
+@app.get('/get_tree')
+def get_tree():
+    return create_visual()
 
 # Change model
 @app.post('/model_choice')
