@@ -146,23 +146,23 @@ def vector_by_id(path_id: str):
 def get_similar_answer(vector, vector_markdown, query, model) -> str:
     # prompt template, you can add external strings to { }
     if model == 'llama2-chat' or model == 'llama2-13b-chat':
-        prompt_template =  """
+        prompt_template =   """
             <s>[INST]
             <<SYS>>
              You should summerize the knowledge and provide concise answer
-            Please answer the questions according following Knowledge with Markdown format
+            Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
             If you does not know the answer to a question, please say I don’t know.
-            ###Knowledge:{context}
+            Knowledge:{context}
             <</SYS>>
-             ###Question:{question}
+             Question:{question}
              [/INST]</s>
         """
     else:
         prompt_template = """
             You are a helpful chatbot
             Please answer the questions according following Knowledge with markwown format
-            ###Knowledge:{context}
-            ###Question:{question}
+            Knowledge:{context}
+            Question:{question}
         """
 
     prompt = PromptTemplate(
