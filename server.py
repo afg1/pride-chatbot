@@ -386,6 +386,7 @@ async def load():
 # Update database
 @app.post("/upload")
 async def upload(files: List[UploadFile] = File(...)):
+    print('File Upload by Bai')
     for file in files:
         if file.filename.endswith(".md"):
             docs = []
@@ -397,6 +398,7 @@ async def upload(files: List[UploadFile] = File(...)):
             directory_name = os.path.basename(parent_directory)
             i = 0
             for section in sections:
+                print(section)
                 id = str(uuid.uuid4())
                 new_doc_markdown = Document(
                     page_content=section,
