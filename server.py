@@ -397,23 +397,27 @@ async def upload(files: List[UploadFile] = File(...)):
             parent_directory = os.path.dirname(file.filename)
             directory_name = os.path.basename(parent_directory)
             i = 0
+            id_folder = str(uuid.uuid4()) 
             for section in sections:
                 print(section)
                 id = str(uuid.uuid4())
                 new_doc_markdown = Document(
                     page_content=section,
-                    metadata = {'source':UPLOAD_FOLDER+'/'+file.filename,
+                    metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
                                 'id':id
                                })
+
                 title = extract_title(content=section)
                 html = markdown.markdown(section)
                 soup = BeautifulSoup(html,'html.parser')
                 new_doc = Document(
                     page_content=soup.get_text(),
-                    metadata = {'source':UPLOAD_FOLDER+'/'+file.filename,
+                    metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
                                 'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
                                 'id':id
                                })
+           
+                
                 docs.append(new_doc)
                 docs_markdown.append(new_doc)
                  
@@ -432,11 +436,10 @@ async def upload(files: List[UploadFile] = File(...)):
                         )
                 db_markdown.persist()
                 db_markdown = None
-            directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
+            directory = os.path.join(UPLOAD_FOLDER,id_folder,os.path.dirname(file.filename))
             if not os.path.exists(directory):
-                directory = os.path.join(UPLOAD_FOLDER, os.path.dirname(file.filename))
                 os.makedirs(directory)
-            with open(UPLOAD_FOLDER+'/'+file.filename, 'w', encoding='utf-8') as save_file:
+            with open(UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename, 'w', encoding='utf-8') as save_file:
                 save_file.write(content)
     return json.dumps({'result':"update successful"})
 
