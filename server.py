@@ -8,7 +8,7 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbeddings
 from langchain.prompts import PromptTemplate
 import load_model
-import os, re, gc, json, asyncio
+import os, re, gc, json, asyncio, zipfile, io, shutil
 import torch, threading
 from fastapi import FastAPI, File, UploadFile, Request, Query, HTTPException, WebSocket, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
@@ -35,6 +35,8 @@ tokenizer = None
 model = None
 model_name_str = None
 user_id = []
+docs =[]
+docs_markdown = []
 request_queue = Queue()
 websockets = {}  # Saving websocket clients
 UPLOAD_FOLDER = './documents/user_upload'
@@ -43,33 +45,40 @@ UPLOAD_FOLDER = './documents/user_upload'
 # functions
 
 # functions
-def create_visual():
-    vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
-    list = vector.get()
+def create_visual(docs): 
     first_children = []
     second_children = []
-    for i in range(len(list['metadatas'])):
+    for i in range(len(docs)):
         if i==0:
-            title =urlparse(list['metadatas'][i]['title']).fragment
-            second_children.append({'name':title,"value":list['metadatas'][i]['title']})
-        elif list['metadatas'][i]["source"]== list['metadatas'][i-1]["source"]:
-            title =urlparse(list['metadatas'][i]['title']).fragment
-            second_children.append({'name':title,"value":list['metadatas'][i]['title']})
-        elif list ['metadatas'][i]["source"]!= list['metadatas'][i-1]["source"]:
+            title =urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name':title,"value":docs[i].metadata['title']})
+        elif docs[i].metadata['source']== docs[i-1].metadata['source'] and i!=len(docs)-1:
+            title =urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name':title,"value":docs[i].metadata['title']})
+        elif docs[i].metadata['source']!= docs[i-1].metadata['source'] and i!=len(docs)-1:
             first_children.append(    
-                {"name":os.path.basename(os.path.dirname(list['metadatas'][i-1]["source"])),
-                 "value":list['metadatas'][i-1]['title'].split('#')[0],
+                {"name":os.path.basename(os.path.dirname(docs[i-1].metadata['source'])),
+                 "value":docs[i-1].metadata['title'].split('#')[0],
                  "children":second_children
                 })
             second_children = []
-            title =urlparse(list['metadatas'][i]['title']).fragment
-            second_children.append({'name':title,"value":list['metadatas'][i]['title']})                             
-
+            title =urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name':title,"value":docs[i].metadata['title']})                             
+        elif i ==len(docs)-1:
+            title =urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name':title,"value":docs[i].metadata['title']})
+            print(docs[i].metadata['source'])
+            first_children.append(    
+                {"name":os.path.basename(os.path.dirname(docs[i].metadata['source'])),
+                 "value":docs[i].metadata['title'].split('#')[0],
+                 "children":second_children
+                })
     json_data = {
           "name": "markdown",
           "children": first_children            
     }                    
-    return json.dumps(json_data)
+    with open('./vector/tree.json', 'w') as file:
+        json.dump(json_data, file)
 
 #extrace ##title
 def extract_title(content:str)-> str:
@@ -77,7 +86,8 @@ def extract_title(content:str)-> str:
     for _, title in titles:
         title = title.lower()
         formatted_title = title.replace(" ", "_")
-        formatted_title = formatted_title.replace(")", "\)")
+        formatted_title = title.replace(".", "")
+        #formatted_title = formatted_title.replace(")", "\)")
         if formatted_title.endswith('_'):
             formatted_title = formatted_title[:-1]
     return formatted_title
@@ -90,6 +100,40 @@ def extract_sections(content: str) -> list:
     sections = [s.strip() for s in sections if s.strip()]
     return sections
 
+#storage single file
+def file_storage(file,content):
+    global docs 
+    global docs_markdown
+    parent_directory = os.path.dirname(file.filename)
+    directory_name = os.path.basename(parent_directory).lower()
+    sections= extract_sections("\n"+content)
+    i = 0
+    id_folder = str(uuid.uuid4()) #识别同名文件所用到的id
+    for section in sections:
+        id = str(uuid.uuid4())
+        new_doc_markdown = Document(
+            page_content=section,
+            metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
+                        'id':id
+                       })
+
+        title = extract_title(content=section)
+        html = markdown.markdown(section)
+        soup = BeautifulSoup(html,'html.parser')
+        new_doc = Document(
+            page_content=soup.get_text(),
+            metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+id_folder+'/'+file.filename,
+                        'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
+                        'id':id
+                       })
+        docs.append(new_doc)
+        docs_markdown.append(new_doc_markdown)
+    directory = os.path.join(UPLOAD_FOLDER,id_folder,os.path.dirname(file.filename))
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    with open(UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename, 'w', encoding='utf-8') as save_file:
+        save_file.write(content)
+    return docs,docs_markdown
 
 # Delete vector in chroma by filename
 def delete_by_file(vector, filname: str):
@@ -322,6 +366,9 @@ def chat():
     vector.delete_collection()
     vector.persist()
     vector= None
+    if os.path.exists("./vector/tree.json") and os.path.exists("./documents/user_upload"):
+        os.remove("./vector/tree.json")
+        shutil.rmtree("./documents/user_upload")
     return {"status": "success"}
 
 # Delete database
@@ -385,62 +432,43 @@ async def load():
 
 # Update database
 @app.post("/upload")
-async def upload(files: List[UploadFile] = File(...)):
-    print('File Upload by Bai')
-    for file in files:
-        if file.filename.endswith(".md"):
-            docs = []
-            docs_markdown = []
-            content_bytes = await file.read()
-            content = content_bytes.decode('utf-8')
-            sections= extract_sections(content=content)
-            parent_directory = os.path.dirname(file.filename)
-            directory_name = os.path.basename(parent_directory)
-            i = 0
-            id_folder = str(uuid.uuid4()) 
-            for section in sections:
-                print(section)
-                id = str(uuid.uuid4())
-                new_doc_markdown = Document(
-                    page_content=section,
-                    metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
-                                'id':id
-                               })
-
-                title = extract_title(content=section)
-                html = markdown.markdown(section)
-                soup = BeautifulSoup(html,'html.parser')
-                new_doc = Document(
-                    page_content=soup.get_text(),
-                    metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
-                                'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
-                                'id':id
-                               })
-           
-                
-                docs.append(new_doc)
-                docs_markdown.append(new_doc)
-                 
-            if len(docs)!=0:
-                db= Chroma.from_documents(
-                        documents=docs, 
-                        embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
-                        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-                        )
-                db.persist()
-                db = None
-                db_markdown = Chroma.from_documents(
-                        documents=docs_markdown, 
-                        embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
-                        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
-                        )
-                db_markdown.persist()
-                db_markdown = None
-            directory = os.path.join(UPLOAD_FOLDER,id_folder,os.path.dirname(file.filename))
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            with open(UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename, 'w', encoding='utf-8') as save_file:
-                save_file.write(content)
+async def upload(files: UploadFile = File(...)):
+    global docs
+    docs_markdown=[]
+    if files.content_type == 'text/markdown':
+        contents = await file.read()
+        content = contents.decode("utf-8")
+        file_storage(file,content)
+        
+    elif 'zip' in files.content_type:
+        in_memory_file = io.BytesIO(await files.read())
+        with zipfile.ZipFile(in_memory_file, 'r') as zip_ref:
+            for file_info in zip_ref.infolist():
+                if file_info.filename.endswith('.md'):
+                    print("storing file:"+ file_info.filename)
+                    with zip_ref.open(file_info) as md_file:
+                        contents = md_file.read()
+                        content = contents.decode("utf-8")
+                        doc1,doc2=file_storage(file_info,content)
+                        gc.collect()
+    # docs = sorted(docs, key=lambda doc: doc.metadata['source'])
+    # docs_markdown = sorted(docs_markdown, key=lambda doc: doc.metadata['source'])
+    create_visual(doc1)
+    if len(doc1)!=0:
+        db= Chroma.from_documents(
+                documents=doc1, 
+                embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
+                persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
+                )
+        db.persist()
+        db = None
+        db_markdown = Chroma.from_documents(
+                documents=doc2, 
+                embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
+                persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
+                )
+        db_markdown.persist()
+        db_markdown = None
     return json.dumps({'result':"update successful"})
 
 
@@ -451,7 +479,9 @@ def download_file(filename: str):
 
 @app.get('/get_tree')
 def get_tree():
-    return create_visual()
+    with open('./vector/tree.json', 'r') as file:
+        data = json.load(file)
+    return json.dumps(data)
 
 # Change model
 @app.post('/model_choice')
