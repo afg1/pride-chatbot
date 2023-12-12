@@ -86,7 +86,7 @@ def extract_title(content:str)-> str:
     for _, title in titles:
         title = title.lower()
         formatted_title = title.replace(" ", "_")
-        formatted_title = title.replace(".", "")
+        formatted_title = formatted_title.replace(".", "")
         #formatted_title = formatted_title.replace(")", "\)")
         if formatted_title.endswith('_'):
             formatted_title = formatted_title[:-1]
@@ -122,7 +122,7 @@ def file_storage(file,content):
         soup = BeautifulSoup(html,'html.parser')
         new_doc = Document(
             page_content=soup.get_text(),
-            metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+id_folder+'/'+file.filename,
+            metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
                         'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
                         'id':id
                        })
