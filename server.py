@@ -444,13 +444,16 @@ async def upload(files: UploadFile = File(...)):
         in_memory_file = io.BytesIO(await files.read())
         with zipfile.ZipFile(in_memory_file, 'r') as zip_ref:
             for file_info in zip_ref.infolist():
-                if file_info.filename.endswith('.md'):
-                    print("storing file:"+ file_info.filename)
-                    with zip_ref.open(file_info) as md_file:
-                        contents = md_file.read()
-                        content = contents.decode("utf-8")
-                        doc1,doc2=file_storage(file_info,content)
-                        gc.collect()
+                
+                print("storing file:"+ file_info.filename)
+                if not file_info.filename.startswith('__MACOSX'):
+                    if file_info.filename.endswith('.md'):
+                        print("storing file:"+ file_info.filename)
+                        with zip_ref.open(file_info) as md_file:
+                            contents = md_file.read()
+                            content = contents.decode("utf-8")
+                            doc1,doc2=file_storage(file_info,content)
+                            gc.collect()
     # docs = sorted(docs, key=lambda doc: doc.metadata['source'])
     # docs_markdown = sorted(docs_markdown, key=lambda doc: doc.metadata['source'])
     create_visual(doc1)
