@@ -1,15 +1,19 @@
 llm:
-    chatglm: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/chatglm-6b/
-    #change the following directory according the environment of EBI server
-    GPT4ALL_PATH: /hps/nobackup/juan/pride/chatbot/pride-chatbot/models/THUDM/autodl-tmp/
+    chatglm2: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/chatglm2-6b
+    GPT4ALL_PATH: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models
     GPTEALL_MODEL: ggml-gpt4all-j-v1.3-groovy.bin
+    Vicuna-13B: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/vicuna-13b-v1.3
+    baichuan-7b: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Baichuan-7B
+    mpt-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/mpt-7b-chat
+    llama2-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Llama-2-7b-chat-hf
+    llama2-13b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Llama-2-13b-chat-hf
     gpu: True
     embedding: all-MiniLM-L6-v2
     model_type: bert
 vector:
-    #uui: d4a1cccb-a9ae-43d1-8f1f-9919c90ad369
-    uui: backup_embedding
     chunk_size: 500
     chunk_overlap: 50
-    api_store: ./vector_store/
+    api_store: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/pride-chatbot/vector/
     cli_store: ./vector/
+
+

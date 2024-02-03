@@ -8,7 +8,7 @@
 
 - [How to do resubmission to PRIDE](./prideresubmission)
 
-- [Guideline for file formats for specific softwares used](./specificsoftwareformats)
+- [Guideline for file formats support](./specificsoftwareformats)
 
 - [How to manually upload files](./submissionupload)
 
@@ -20,16 +20,26 @@
 
 - [Search PRIDE datasets in PRIDE Archive](./searchpridearchive)
 
-- [PRIDE Results Inspector](./resultpage)
-
+- [Miscellaneous queries](./misc)
 
 ## Tools Help Pages
 
 - [Submission Tool](./pridesubmissiontool)
 
-- [PRIDE Archive API](https://www.ebi.ac.uk/pride/ws/archive/v2/swagger-ui.html)
+- [PRIDE Archive API](./prideapi)
 
 - [Troubleshooting](./tooltroubleshooting)
+
+## FAQ
+
+- [FAQ](./faq)
+
+
+## Additional Resources
+
+- [ProteomeXchange](./proteomexchange)
+- [SDRF-Proteomics](./sdrf)
+
 
 
 
