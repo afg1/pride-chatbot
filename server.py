@@ -261,15 +261,14 @@ def process(prompt, model_name):
     result = {"result": completion, "relevant-chunk": docs}
     return result
 
-def process_p(prompt, model_name):
+def process_pride_projects(prompt, model_name):
     torch.cuda.empty_cache()
     gc.collect()
     query = prompt
-    db = Chroma(
-        persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad380",
-        embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
+    db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad380")
+    db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad379")
     # Retrieve relevant documents in databse and form a prompt
-    prompt, docs = get_similar_answer(vector=db, query=query, model=model_name)
+    prompt, docs = get_similar_answer(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
@@ -310,7 +309,7 @@ def process_pride(data: dict):
     llm_model = data['model_name']
 
     start_time = round(time.time() * 1000)
-    result = process_p(chat_query, llm_model)
+    result = process_pride_projects(chat_query, llm_model)
     end_time = round(time.time() * 1000)
 
     result = {k: v.strip() for k, v in result.items()}
@@ -325,6 +324,7 @@ def process_pride(data: dict):
 
 
 vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
+vector_pride_projects = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad380')
 
 # interface
 
@@ -347,7 +347,6 @@ app.add_middleware(
 )
 
 
-# Accept foreground chat requests and place them in the queue
 @app.post('/chat')
 def chat(data: dict):
     return process_queue(data)
