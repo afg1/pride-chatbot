@@ -30,7 +30,7 @@ def create_and_save(data_folder: str) -> list:
                     new_doc = Document(
                         page_content=soup.get_text(),
                         metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' + filename,
-                                  'title': "http://www.ebi.ac.uk/pride/" + filename.split('.')[0],
+                                  'title': "http://www.ebi.ac.uk/pride/archive/projects/" + filename.split('.')[0],
                                   'id': meta_id
                                   })
                     docs.append(new_doc)
