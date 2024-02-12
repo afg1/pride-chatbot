@@ -246,7 +246,7 @@ def get_similar_answer(vector, vector_markdown, query, model) -> str:
 
 
 # Search for relevant content in the vector based on the query and build a prompt
-def get_similar_answers_pride(vector, vector_markdown, query, model) -> str:
+def get_similar_answers_pride(vector, query, model) -> str:
     # prompt template, you can add external strings to { }
     if model == 'llama2-chat' or model == 'llama2-13b-chat':
         prompt_template = """
@@ -290,6 +290,8 @@ def get_similar_answers_pride(vector, vector_markdown, query, model) -> str:
 
     if count > 2:
         context.append("The above are top matching datasets , there could be others as well")
+    if count == 0:
+        context.append("No matching datasets found")
 
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document
@@ -323,9 +325,9 @@ def process_pride_projects(prompt, model_name):
     gc.collect()
     query = prompt
     db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad380")
-    db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad379")
+    # db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad379")
     # Retrieve relevant documents in databse and form a prompt
-    prompt, docs = get_similar_answers_pride(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
+    prompt, docs = get_similar_answers_pride(vector=db, query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
@@ -380,9 +382,6 @@ def process_pride(data: dict):
 
     return result
 
-
-vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
-vector_pride_projects = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad380')
 
 # interface
 

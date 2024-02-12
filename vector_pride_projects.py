@@ -12,30 +12,7 @@ UPLOAD_FOLDER = './documents/user_upload'
 
 
 # create vector database from one folder directory
-def create_and_save(file_path: str):
-    file_id = str(uuid.uuid4())
-    save_path = "./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad380"
-    embeddings = HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2")
-    docs, docs_markdown = import_file(file_path)
-    vector = Chroma.from_documents(
-        documents=docs,
-        embedding=embeddings,
-        persist_directory=save_path
-    )
-    vector.id = "d4a1cccb-a9ae-43d1-8f1f-9919c90ad380"
-
-    save_path1 = "./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad379"
-    vector1 = Chroma.from_documents(
-        documents=docs_markdown,
-        embedding=embeddings,
-        persist_directory=save_path1
-    )
-    vector1.id = "d4a1cccb-a9ae-43d1-8f1f-9919c90ad379"
-    return vector, vector1
-
-
-# import all markdown files in the folder and then do the segmentation
-def import_file(data_folder: str) -> list:
+def create_and_save(data_folder: str) -> list:
     for root, dirs, files in os.walk(data_folder):
         for filename in files:
             fullPath = os.path.join(root, filename)
