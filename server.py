@@ -1,33 +1,33 @@
-from slowapi.errors import RateLimitExceeded
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from peewee import fn
-from transformers import AutoModelForCausalLM, AutoTokenizer, AutoModel
-from langchain.docstore.document import Document
-from langchain.vectorstores import Chroma
-from langchain.embeddings import HuggingFaceEmbeddings, SentenceTransformerEmbeddings
-from langchain.prompts import PromptTemplate
-import load_model
-import os, re, gc, json, asyncio, zipfile, io, shutil
-import torch, threading
-from fastapi import FastAPI, File, UploadFile, Request, Query, HTTPException, WebSocket, BackgroundTasks
-from fastapi.responses import JSONResponse, FileResponse
-from typing import List
+import gc
+import io
 import json
-import uuid
-import logging
-from typing import Dict, Any
-from fastapi.middleware.cors import CORSMiddleware
-from queue import Queue
-import threading
+import os
+import re
+import shutil
 import time
-import sqlite3
-import markdown
+import uuid
+import zipfile
+from queue import Queue
 from urllib.parse import urlparse
-from bs4 import BeautifulSoup
 
-from chat_history import ChatHistory
+import markdown
+import torch
+from bs4 import BeautifulSoup
+from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse
+from langchain.docstore.document import Document
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.prompts import PromptTemplate
+from langchain.vectorstores import Chroma
+from peewee import fn
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+
+import load_model
 from chat_history import ChatBenchmark
+from chat_history import ChatHistory
 
 # global variables
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
@@ -35,7 +35,7 @@ tokenizer = None
 model = None
 model_name_str = None
 user_id = []
-docs =[]
+docs = []
 docs_markdown = []
 request_queue = Queue()
 websockets = {}  # Saving websocket clients
@@ -45,52 +45,54 @@ UPLOAD_FOLDER = './documents/user_upload'
 # functions
 
 # functions
-def create_visual(docs): 
+def create_visual(docs):
     first_children = []
     second_children = []
     for i in range(len(docs)):
-        if i==0:
-            title =urlparse(docs[i].metadata['title']).fragment
-            second_children.append({'name':title,"value":docs[i].metadata['title']})
-        elif docs[i].metadata['source']== docs[i-1].metadata['source'] and i!=len(docs)-1:
-            title =urlparse(docs[i].metadata['title']).fragment
-            second_children.append({'name':title,"value":docs[i].metadata['title']})
-        elif docs[i].metadata['source']!= docs[i-1].metadata['source'] and i!=len(docs)-1:
-            first_children.append(    
-                {"name":os.path.basename(os.path.dirname(docs[i-1].metadata['source'])),
-                 "value":docs[i-1].metadata['title'].split('#')[0],
-                 "children":second_children
-                })
+        if i == 0:
+            title = urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name': title, "value": docs[i].metadata['title']})
+        elif docs[i].metadata['source'] == docs[i - 1].metadata['source'] and i != len(docs) - 1:
+            title = urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name': title, "value": docs[i].metadata['title']})
+        elif docs[i].metadata['source'] != docs[i - 1].metadata['source'] and i != len(docs) - 1:
+            first_children.append(
+                {"name": os.path.basename(os.path.dirname(docs[i - 1].metadata['source'])),
+                 "value": docs[i - 1].metadata['title'].split('#')[0],
+                 "children": second_children
+                 })
             second_children = []
-            title =urlparse(docs[i].metadata['title']).fragment
-            second_children.append({'name':title,"value":docs[i].metadata['title']})                             
-        elif i ==len(docs)-1:
-            title =urlparse(docs[i].metadata['title']).fragment
-            second_children.append({'name':title,"value":docs[i].metadata['title']})
+            title = urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name': title, "value": docs[i].metadata['title']})
+        elif i == len(docs) - 1:
+            title = urlparse(docs[i].metadata['title']).fragment
+            second_children.append({'name': title, "value": docs[i].metadata['title']})
             print(docs[i].metadata['source'])
-            first_children.append(    
-                {"name":os.path.basename(os.path.dirname(docs[i].metadata['source'])),
-                 "value":docs[i].metadata['title'].split('#')[0],
-                 "children":second_children
-                })
+            first_children.append(
+                {"name": os.path.basename(os.path.dirname(docs[i].metadata['source'])),
+                 "value": docs[i].metadata['title'].split('#')[0],
+                 "children": second_children
+                 })
     json_data = {
-          "name": "markdown",
-          "children": first_children            
-    }                    
+        "name": "markdown",
+        "children": first_children
+    }
     with open('./vector/tree.json', 'w') as file:
         json.dump(json_data, file)
 
-#extrace ##title
-def extract_title(content:str)-> str:
-    titles = re.findall(r'^(#+)\s(.+)$',content, re.MULTILINE)
+
+# extrace ##title
+def extract_title(content: str) -> str:
+    titles = re.findall(r'^(#+)\s(.+)$', content, re.MULTILINE)
     for _, title in titles:
         title = title.lower()
         formatted_title = title.replace(" ", "_")
         formatted_title = formatted_title.replace(".", "")
-        #formatted_title = formatted_title.replace(")", "\)")
+        # formatted_title = formatted_title.replace(")", "\)")
         if formatted_title.endswith('_'):
             formatted_title = formatted_title[:-1]
     return formatted_title
+
 
 # Split the content of the markdown file
 def extract_sections(content: str) -> list:
@@ -100,40 +102,42 @@ def extract_sections(content: str) -> list:
     sections = [s.strip() for s in sections if s.strip()]
     return sections
 
-#storage single file
-def file_storage(file,content):
-    global docs 
+
+# storage single file
+def file_storage(file, content):
+    global docs
     global docs_markdown
     parent_directory = os.path.dirname(file.filename)
     directory_name = os.path.basename(parent_directory).lower()
-    sections= extract_sections("\n"+content)
+    sections = extract_sections("\n" + content)
     i = 0
-    id_folder = str(uuid.uuid4()) #识别同名文件所用到的id
+    id_folder = str(uuid.uuid4())  # 识别同名文件所用到的id
     for section in sections:
         id = str(uuid.uuid4())
         new_doc_markdown = Document(
             page_content=section,
-            metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
-                        'id':id
-                       })
+            metadata={'source': UPLOAD_FOLDER + '/' + id_folder + '/' + file.filename,
+                      'id': id
+                      })
 
         title = extract_title(content=section)
         html = markdown.markdown(section)
-        soup = BeautifulSoup(html,'html.parser')
+        soup = BeautifulSoup(html, 'html.parser')
         new_doc = Document(
             page_content=soup.get_text(),
-            metadata = {'source':UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename,
-                        'title':"http://www.ebi.ac.uk/pride/markdownpage/"+directory_name+'#'+title,
-                        'id':id
-                       })
+            metadata={'source': UPLOAD_FOLDER + '/' + id_folder + '/' + file.filename,
+                      'title': "http://www.ebi.ac.uk/pride/markdownpage/" + directory_name + '#' + title,
+                      'id': id
+                      })
         docs.append(new_doc)
         docs_markdown.append(new_doc_markdown)
-    directory = os.path.join(UPLOAD_FOLDER,id_folder,os.path.dirname(file.filename))
+    directory = os.path.join(UPLOAD_FOLDER, id_folder, os.path.dirname(file.filename))
     if not os.path.exists(directory):
         os.makedirs(directory)
-    with open(UPLOAD_FOLDER+'/'+id_folder+'/'+file.filename, 'w', encoding='utf-8') as save_file:
+    with open(UPLOAD_FOLDER + '/' + id_folder + '/' + file.filename, 'w', encoding='utf-8') as save_file:
         save_file.write(content)
-    return docs,docs_markdown
+    return docs, docs_markdown
+
 
 # Delete vector in chroma by filename
 def delete_by_file(vector, filname: str):
@@ -150,33 +154,37 @@ def delete_by_file(vector, filname: str):
     else:
         return json.dumps({"result": "Can't find the file"})
 
-def find_same_markdown(vector,source) -> list:
+
+def find_same_markdown(vector, source) -> list:
     markdown_content = []
     for i in source:
         for j in range(len(vector.get()['metadatas'])):
-            if i== vector.get()['metadatas'][j]['id']:
+            if i == vector.get()['metadatas'][j]['id']:
                 markdown_content.append(vector.get()['documents'][j])
                 break
-        
-    return markdown_content 
 
-def find_source(docs) ->list:
+    return markdown_content
+
+
+def find_source(docs) -> list:
     source = []
-    if len(docs)!=0:
+    if len(docs) != 0:
         for d in docs:
-            source.append(d[0].metadata['id'])     
+            source.append(d[0].metadata['id'])
     else:
         source = None
-    return source 
+    return source
+
 
 # Load the specified private database (vector) by specifying the id
 def vector_by_id(path_id: str):
     directory = "./vector/" + path_id
-    vector = Chroma(persist_directory=directory,embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
+    vector = Chroma(persist_directory=directory,
+                    embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     data = vector.get()['metadatas']
     unique_data = []
     seen = set()
-    
+
     for item in data:
         identifier = item['source']
         if identifier not in seen:
@@ -190,7 +198,7 @@ def vector_by_id(path_id: str):
 def get_similar_answer(vector, vector_markdown, query, model) -> str:
     # prompt template, you can add external strings to { }
     if model == 'llama2-chat' or model == 'llama2-13b-chat':
-        prompt_template =   """
+        prompt_template = """
             <s>[INST]
             <<SYS>>
              You should summerize the knowledge and provide concise answer
@@ -215,13 +223,10 @@ def get_similar_answer(vector, vector_markdown, query, model) -> str:
     )
 
     docs = vector.similarity_search_with_score(query)
-    print(docs)
-    print('-------------------------------------------------------')
-    if len(docs)!=0:
+    if len(docs) != 0:
         source = find_source(docs)
-        vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
-        docs_markdown = find_same_markdown(vector_markdown,source) 
-    # put the relevant document into context
+        docs_markdown = find_same_markdown(vector_markdown, source)
+        # put the relevant document into context
     document = ''
     count = 0
     context = []
@@ -233,8 +238,59 @@ def get_similar_answer(vector, vector_markdown, query, model) -> str:
         else:
             context.append(d[0].page_content)
         count += 1
-        document = document + str(count) + ':' + docs_markdown[count-1]+'\n [link]('+d[0].metadata['title']+')\n*******\n'
+        document = document + str(count) + ':' + docs_markdown[count - 1] + '\n [link](' + d[0].metadata[
+            'title'] + ')\n*******\n'
     # add the question input by user ande the relevant into prompt
+    result = prompt.format(context='\t'.join(context), question=query)
+    return result, document
+
+
+# Search for relevant content in the vector based on the query and build a prompt
+def get_similar_answers_pride(vector, vector_markdown, query, model) -> str:
+    # prompt template, you can add external strings to { }
+    if model == 'llama2-chat' or model == 'llama2-13b-chat':
+        prompt_template = """
+            <s>[INST]
+            <<SYS>>
+             You should summerize the knowledge and provide concise answer
+            Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
+            If you does not know the answer to a question, please say I don’t know.
+            Knowledge:{context}
+            <</SYS>>
+             Question:{question}
+             [/INST]</s>
+        """
+    else:
+        prompt_template = """
+            You are a helpful chatbot
+            Please answer the questions according following Knowledge with markwown format
+            Knowledge:{context}
+            Question:{question}
+        """
+
+    prompt = PromptTemplate(
+        template=prompt_template,
+        input_variables=["context", "question"]
+    )
+
+    search_results = vector.similarity_search_with_score(query)
+    document = ''
+    count = 0
+    context = []
+    for d in search_results:
+        if count > 0:
+            context.append("Other accession :" + os.path.splitext(os.path.basename(d[0].metadata['source']))[
+                0] + " containing matching data:" + d[0].page_content)
+        else:
+            context.append(
+                "Accession " + os.path.splitext(os.path.basename(d[0].metadata['source']))[0] + " contains data: " + d[
+                    0].page_content)
+        count += 1
+        document = document + str(count) + ':' + '\n [link](' + d[0].metadata['title'] + ')\n*******\n'
+
+    if count > 2:
+        context.append("The above are top matching datasets , there could be others as well")
+
     result = prompt.format(context='\t'.join(context), question=query)
     return result, document
 
@@ -244,10 +300,10 @@ def process(prompt, model_name):
     torch.cuda.empty_cache()
     gc.collect()
     query = prompt
-    db =vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad370")
+    db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad370")
     db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad369")
     # Retrieve relevant documents in databse and form a prompt
-    prompt, docs = get_similar_answer(vector=db,vector_markdown=db_markdown,query=query, model=model_name)
+    prompt, docs = get_similar_answer(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
@@ -261,6 +317,7 @@ def process(prompt, model_name):
     result = {"result": completion, "relevant-chunk": docs}
     return result
 
+
 def process_pride_projects(prompt, model_name):
     torch.cuda.empty_cache()
     gc.collect()
@@ -268,7 +325,7 @@ def process_pride_projects(prompt, model_name):
     db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad380")
     db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad379")
     # Retrieve relevant documents in databse and form a prompt
-    prompt, docs = get_similar_answer(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
+    prompt, docs = get_similar_answers_pride(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
@@ -299,9 +356,10 @@ def process_queue(data: dict):
     # insert the query & answer to database
     ChatHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
 
-    result['timems']=time_ms
+    result['timems'] = time_ms
 
     return result
+
 
 def process_pride(data: dict):
     chat_query = data['prompt']
@@ -316,9 +374,9 @@ def process_pride(data: dict):
     time_ms = end_time - start_time
 
     # insert the query & answer to database
-    #ChatHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
+    # ChatHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
 
-    result['timems']=time_ms
+    result['timems'] = time_ms
 
     return result
 
@@ -351,24 +409,27 @@ app.add_middleware(
 def chat(data: dict):
     return process_queue(data)
 
+
 @app.post('/pride')
 def pride(data: dict):
     return process_pride(data)
+
 
 @app.get('/delete_all')
 def chat():
     vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad369')
     vector.delete_collection()
     vector.persist()
-    vector= None
+    vector = None
     vector = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
     vector.delete_collection()
     vector.persist()
-    vector= None
+    vector = None
     if os.path.exists("./vector/tree.json") and os.path.exists("./documents/user_upload"):
         os.remove("./vector/tree.json")
         shutil.rmtree("./documents/user_upload")
     return {"status": "success"}
+
 
 # Delete database
 @app.post('/delete')
@@ -385,6 +446,7 @@ async def delete(item: dict):
     vector_markdown = None
     vector = None
     return result
+
 
 @app.post('/saveBenchmark')
 def savebenchmark(data: dict):
@@ -413,7 +475,7 @@ def getbenchmark(page_num: int = 0, items_per_page: int = 100):
             'answer_b': row.answer_b,
             'time_a': row.time_a,
             'time_b': row.time_b,
-            'winner':row.winner,
+            'winner': row.winner,
             'judge': row.judge
         }
         results.append(result_dict)
@@ -433,45 +495,45 @@ async def load():
 @app.post("/upload")
 async def upload(files: UploadFile = File(...)):
     global docs
-    docs_markdown=[]
+    docs_markdown = []
     if files.content_type == 'text/markdown':
         contents = await file.read()
         content = contents.decode("utf-8")
-        file_storage(file,content)
-        
+        file_storage(file, content)
+
     elif 'zip' in files.content_type:
         in_memory_file = io.BytesIO(await files.read())
         with zipfile.ZipFile(in_memory_file, 'r') as zip_ref:
             for file_info in zip_ref.infolist():
-                
-                print("storing file:"+ file_info.filename)
+
+                print("storing file:" + file_info.filename)
                 if not file_info.filename.startswith('__MACOSX'):
                     if file_info.filename.endswith('.md'):
-                        print("storing file:"+ file_info.filename)
+                        print("storing file:" + file_info.filename)
                         with zip_ref.open(file_info) as md_file:
                             contents = md_file.read()
                             content = contents.decode("utf-8")
-                            doc1,doc2=file_storage(file_info,content)
+                            doc1, doc2 = file_storage(file_info, content)
                             gc.collect()
     # docs = sorted(docs, key=lambda doc: doc.metadata['source'])
     # docs_markdown = sorted(docs_markdown, key=lambda doc: doc.metadata['source'])
     create_visual(doc1)
-    if len(doc1)!=0:
-        db= Chroma.from_documents(
-                documents=doc1, 
-                embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
-                persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-                )
+    if len(doc1) != 0:
+        db = Chroma.from_documents(
+            documents=doc1,
+            embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
+            persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
+        )
         db.persist()
         db = None
         db_markdown = Chroma.from_documents(
-                documents=doc2, 
-                embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
-                persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
-                )
+            documents=doc2,
+            embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
+            persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
+        )
         db_markdown.persist()
         db_markdown = None
-    return json.dumps({'result':"update successful"})
+    return json.dumps({'result': "update successful"})
 
 
 # Download database
@@ -479,11 +541,13 @@ async def upload(files: UploadFile = File(...)):
 def download_file(filename: str):
     return FileResponse(filename)
 
+
 @app.get('/get_tree')
 def get_tree():
     with open('./vector/tree.json', 'r') as file:
         data = json.load(file)
     return json.dumps(data)
+
 
 # Change model
 @app.post('/model_choice')
