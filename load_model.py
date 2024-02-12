@@ -141,9 +141,8 @@ def llm_chat(choice:str,prompt:str,tokenizer,model,query:str):
                     top_k=1,
                     num_return_sequences=1,
                     eos_token_id=tokenizer.eos_token_id,
-                    max_length=1500,
+                    max_length=1700,
                     )
-        print(out)
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
         # content_start = start_index + len("###Question:"+prompt) + 1
         # end_index = out[0]['generated_text'].find("###", content_start)
