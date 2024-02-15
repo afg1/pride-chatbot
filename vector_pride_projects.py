@@ -24,7 +24,7 @@ def create_and_save(data_folder: str) -> list:
                 parent_directory = os.path.dirname(fullPath)
                 directory_name = os.path.basename(parent_directory)
 
-                html = markdown.markdown(sections)
+                html = markdown.markdown('\n'.join(sections))
                 soup = BeautifulSoup(html, 'html.parser')
                 meta_id = str(uuid.uuid4())
                 new_doc = Document(
@@ -35,7 +35,7 @@ def create_and_save(data_folder: str) -> list:
                               })
                 docs.append(new_doc)
                 new_doc_markdown = Document(
-                    page_content=sections,
+                    page_content='\n'.join(sections),
                     metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' + filename,
                               'id': meta_id
                               })
