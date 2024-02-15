@@ -280,11 +280,11 @@ def get_similar_answers_pride(vector, query, model) -> str:
     for d in search_results:
         if count > 0:
             context.append("Other accession :" + os.path.splitext(os.path.basename(d[0].metadata['source']))[
-                0] + " containing matching data:" + d[0].page_content)
+                0] + " containing matching data:" + d[0].page_content.split(".")[0])
         else:
             context.append(
                 "Accession " + os.path.splitext(os.path.basename(d[0].metadata['source']))[0] + " contains data: " + d[
-                    0].page_content)
+                    0].page_content.split(".")[0])
         count += 1
         document = document + str(count) + ':' + '\n [link](' + d[0].metadata['title'] + ')\n*******\n'
 
