@@ -23,23 +23,23 @@ def create_and_save(data_folder: str) -> list:
                 sections = extract_sections(content=content)
                 parent_directory = os.path.dirname(fullPath)
                 directory_name = os.path.basename(parent_directory)
-                for section in sections:
-                    html = markdown.markdown(section)
-                    soup = BeautifulSoup(html, 'html.parser')
-                    meta_id = str(uuid.uuid4())
-                    new_doc = Document(
-                        page_content=soup.get_text(),
-                        metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' + filename,
-                                  'title': "http://www.ebi.ac.uk/pride/archive/projects/" + filename.split('.')[0],
-                                  'id': meta_id
-                                  })
-                    docs.append(new_doc)
-                    new_doc_markdown = Document(
-                        page_content=section,
-                        metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' + filename,
-                                  'id': meta_id
-                                  })
-                    docs_markdown.append(new_doc_markdown)
+
+                html = markdown.markdown(sections)
+                soup = BeautifulSoup(html, 'html.parser')
+                meta_id = str(uuid.uuid4())
+                new_doc = Document(
+                    page_content=soup.get_text(),
+                    metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' + filename,
+                              'title': "http://www.ebi.ac.uk/pride/archive/projects/" + filename.split('.')[0],
+                              'id': meta_id
+                              })
+                docs.append(new_doc)
+                new_doc_markdown = Document(
+                    page_content=sections,
+                    metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' + filename,
+                              'id': meta_id
+                              })
+                docs_markdown.append(new_doc_markdown)
                 if len(docs) != 0:
                     db = Chroma.from_documents(
                         documents=docs,
