@@ -285,16 +285,16 @@ def get_similar_answers_pride(vector, query, model) -> str:
         count += 1
 
     if count > 2:
-        match_data("The above are top matching datasets , there could be others as well")
+        match_data.append("The above are top matching datasets , there could be others as well")
     if count == 0:
         match_data.append("No matching datasets found")
 
     accession_string = ' '.join(accessions)
     match_data_string = ' '.join(match_data)
     context = re.sub(r'[-:\n\s]+', ' ', match_data_string)
-    context = accession_string + " contains data " + context
+    ct = accession_string + " contains data " + context
 
-    result = prompt.format(context, question=query)
+    result = prompt.format(context=ct, question=query)
     return result, document
 
 
