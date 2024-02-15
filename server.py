@@ -276,24 +276,25 @@ def get_similar_answers_pride(vector, query, model) -> str:
     search_results = vector.similarity_search_with_score(query)
     document = ''
     count = 0
-    context = []
+    accessions = []
+    match_data = []
     for d in search_results:
-        if count > 0:
-            context.append("Other accession :" + os.path.splitext(os.path.basename(d[0].metadata['source']))[
-                0] + " containing matching data:" + d[0].page_content.split(".")[0])
-        else:
-            context.append(
-                "Accession " + os.path.splitext(os.path.basename(d[0].metadata['source']))[0] + " contains data: " + d[
-                    0].page_content.split(".")[0])
+        accessions.append(os.path.splitext(os.path.basename(d[0].metadata['source']))[0])
+        match_data.append(d[0].page_content.split(".")[0])
+        document = document + str(count) + ':' + '\n [link](' + d[0].metadata['title'] + ')\n**\n'
         count += 1
-        document = document + str(count) + ':' + '\n [link](' + d[0].metadata['title'] + ')\n*******\n'
 
     if count > 2:
-        context.append("The above are top matching datasets , there could be others as well")
+        match_data("The above are top matching datasets , there could be others as well")
     if count == 0:
-        context.append("No matching datasets found")
+        match_data.append("No matching datasets found")
 
-    result = prompt.format(context='\t'.join(context), question=query)
+    accession_string = ' '.join(accessions)
+    match_data_string = ' '.join(match_data)
+    context = re.sub(r'[-:\n\s]+', ' ', match_data_string)
+    context = accession_string + " contains data " + context
+
+    result = prompt.format(context, question=query)
     return result, document
 
 
