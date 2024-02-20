@@ -28,6 +28,7 @@ from slowapi.util import get_remote_address
 import load_model
 from chat_history import ChatBenchmark
 from chat_history import ChatHistory
+from chat_history import ProjectsQueryFeedBack
 
 # global variables
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
@@ -398,8 +399,6 @@ db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad369")
 # Pride-projects vector database
 project_vector = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad380")
 
-
-
 # CORS config
 app.add_middleware(
     CORSMiddleware,
@@ -482,6 +481,32 @@ def getbenchmark(page_num: int = 0, items_per_page: int = 100):
             'time_b': row.time_b,
             'winner': row.winner,
             'judge': row.judge
+        }
+        results.append(result_dict)
+
+    return results
+
+
+@app.post('/saveProjectsQueryFeedback')
+def save_projects_query_feedback(data: dict):
+    # insert the query & answer to database
+    ProjectsQueryFeedBack.create(query=data['query'],
+                                 answer=data['answer'],
+                                 feedback=data['feedback'])
+
+
+@app.get('/getProjectsQueryFeedback')
+def get_projects_query_feedback(page_num: int = 0, items_per_page: int = 100):
+    sql_results = ProjectsQueryFeedBack.select(ProjectsQueryFeedBack.query, ProjectsQueryFeedBack.answer,
+                                               ProjectsQueryFeedBack.feedback) \
+        .paginate(page_num, items_per_page)
+
+    results = []
+    for row in sql_results:
+        result_dict = {
+            'query': row.query,
+            'answer': row.answer,
+            'feedback': row.feedback
         }
         results.append(result_dict)
 
