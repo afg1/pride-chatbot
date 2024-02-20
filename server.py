@@ -303,8 +303,6 @@ def process(prompt, model_name):
     torch.cuda.empty_cache()
     gc.collect()
     query = prompt
-    db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad370")
-    db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad369")
     # Retrieve relevant documents in databse and form a prompt
     prompt, docs = get_similar_answer(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
     try:
@@ -325,10 +323,8 @@ def process_pride_projects(prompt, model_name):
     torch.cuda.empty_cache()
     gc.collect()
     query = prompt
-    db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad380")
-    # db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad379")
-    # Retrieve relevant documents in databse and form a prompt
-    prompt, docs = get_similar_answers_pride(vector=db, query=query, model=model_name)
+    # Retrieve relevant documents in database and form a prompt
+    prompt, document = get_similar_answers_pride(vector=project_vector, query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
@@ -339,7 +335,7 @@ def process_pride_projects(prompt, model_name):
         print(e)
         print('error in loading model', model_name)
         completion = "error in loading model"
-    result = {"result": completion, "relevant-chunk": docs}
+    result = {"result": completion, "relevant-chunk": document}
     return result
 
 
@@ -394,6 +390,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 lltokenizer, llmodel = load_model.llm_model_init('llama2-13b-chat', True)
 glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
+
+# Pride-docs vector database
+db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad370")
+db_markdown = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad369")
+
+# Pride-projects vector database
+project_vector = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad380")
+
+
 
 # CORS config
 app.add_middleware(
