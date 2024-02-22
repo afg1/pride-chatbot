@@ -7,13 +7,14 @@ import shutil
 import time
 import uuid
 import zipfile
+from collections import defaultdict
 from queue import Queue
 from urllib.parse import urlparse
 
 import markdown
 import torch
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, requests
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from langchain.docstore.document import Document
@@ -26,7 +27,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 import load_model
-from chat_history import ChatBenchmark
+from chat_history import ChatBenchmark, ProjectsSearchHistory
 from chat_history import ChatHistory
 from chat_history import ProjectsQueryFeedBack
 
@@ -195,6 +196,26 @@ def vector_by_id(path_id: str):
     return vector
 
 
+def get_similar_projects_from_solr(accession_list):
+    url = "https://www.ebi.ac.uk/pride/ws/archive/v2/projects/{accession}/similarProjects?pageSize=10"
+    accession_title_counts = defaultdict(int)
+
+    for accession in accession_list:
+        response = requests.get(url.format(accession=accession))
+        if response.status_code == 200:
+            data = response.json()
+            compact_projects = data["_embedded"]["compactprojects"]
+            for project in compact_projects:
+                accession_title_counts[(project["accession"], project["title"])] += 1
+        else:
+            print(f"Failed to fetch data for accession {accession}")
+
+    accession_title_list = [{"accession": accession, "title": title, "count": count} for (accession, title), count in
+                            accession_title_counts.items()]
+    sorted_accession_title_list = sorted(accession_title_list, key=lambda x: x["count"], reverse=True)
+    return sorted_accession_title_list
+
+
 # Search for relevant content in the vector based on the query and build a prompt
 def get_similar_answer(vector, vector_markdown, query, model) -> str:
     # prompt template, you can add external strings to { }
@@ -274,15 +295,13 @@ def get_similar_answers_pride(vector, query, model) -> str:
         input_variables=["context", "question"]
     )
 
-    search_results = vector.similarity_search_with_score(query)
-    document = ''
+    search_results = vector.similarity_search_with_score(query, k=10)
     count = 0
     accessions = []
     match_data = []
     for d in search_results:
         accessions.append(os.path.splitext(os.path.basename(d[0].metadata['source']))[0])
         match_data.append(d[0].page_content.split(".")[0])
-        document = document + str(count) + ':' + '\n [link](' + d[0].metadata['title'] + ')\n**\n'
         count += 1
 
     if count > 2:
@@ -296,7 +315,7 @@ def get_similar_answers_pride(vector, query, model) -> str:
     ct = accession_string + " contains data " + context
 
     result = prompt.format(context=ct, question=query)
-    return result, document
+    return result, accessions
 
 
 # Processing chat requests
@@ -305,13 +324,13 @@ def process(prompt, model_name):
     gc.collect()
     query = prompt
     # Retrieve relevant documents in databse and form a prompt
-    prompt, docs = get_similar_answer(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
+    result, docs = get_similar_answer(vector=db, vector_markdown=db_markdown, query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
-            completion = load_model.llm_chat(model_name, prompt, lltokenizer, llmodel, query)
+            completion = load_model.llm_chat(model_name, result, lltokenizer, llmodel, query)
         else:
-            completion = load_model.llm_chat(model_name, prompt, glmtokenizer, glmmodel, query)
+            completion = load_model.llm_chat(model_name, result, glmtokenizer, glmmodel, query)
     except Exception as e:
         print(e)
         print('error in loading model', model_name)
@@ -325,18 +344,18 @@ def process_pride_projects(prompt, model_name):
     gc.collect()
     query = prompt
     # Retrieve relevant documents in database and form a prompt
-    prompt, document = get_similar_answers_pride(vector=project_vector, query=query, model=model_name)
+    result, accessions = get_similar_answers_pride(vector=project_vector, query=query, model=model_name)
     try:
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
-            completion = load_model.llm_chat(model_name, prompt, lltokenizer, llmodel, query)
+            completion = load_model.llm_chat(model_name, result, lltokenizer, llmodel, query)
         else:
-            completion = load_model.llm_chat(model_name, prompt, glmtokenizer, glmmodel, query)
+            completion = load_model.llm_chat(model_name, result, glmtokenizer, glmmodel, query)
     except Exception as e:
         print(e)
         print('error in loading model', model_name)
         completion = "error in loading model"
-    result = {"result": completion, "relevant-chunk": document}
+    result = {"result": completion, "relevant-chunk": accessions}
     return result
 
 
@@ -374,7 +393,7 @@ def process_pride(data: dict):
     time_ms = end_time - start_time
 
     # insert the query & answer to database
-    # ChatHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
+    ProjectsSearchHistory.create(query=chat_query, model=llm_model, answer=result['result'], millisecs=time_ms)
 
     result['timems'] = time_ms
 
@@ -417,6 +436,14 @@ def chat(data: dict):
 @app.post('/pride')
 def pride(data: dict):
     return process_pride(data)
+
+
+
+
+
+@app.post('/similar_projects')
+def pride(accessions: list):
+    return get_similar_projects_from_solr(accessions)
 
 
 @app.get('/delete_all')

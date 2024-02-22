@@ -38,6 +38,14 @@ class ProjectsQueryFeedBack(BaseModel):
     feedback = TextField()
 
 
+class ProjectsSearchHistory(BaseModel):
+    id = AutoField(primary_key=True)
+    query = TextField()
+    model = TextField()
+    answer = TextField()
+    millisecs = IntegerField()
+
+
 # Function to append data to the backup file
 def append_to_backup():
     backup_filename = 'backup_chatbot.db'
@@ -50,3 +58,4 @@ db.connect()
 db.create_tables([ChatHistory])
 db.create_tables([ChatBenchmark])
 db.create_tables([ProjectsQueryFeedBack])
+db.create_tables([ProjectsSearchHistory])
