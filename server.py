@@ -440,7 +440,7 @@ def pride(data: dict):
     return process_pride(data)
 
 
-@app.post('/similar_projects')
+@app.get('/similar_projects')
 def pride(accessions: str):
     return get_similar_projects_from_solr(accessions)
 
