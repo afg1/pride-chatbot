@@ -14,7 +14,8 @@ from urllib.parse import urlparse
 import markdown
 import torch
 from bs4 import BeautifulSoup
-from fastapi import FastAPI, File, UploadFile, requests
+from fastapi import FastAPI, File, UploadFile
+import requests
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from langchain.docstore.document import Document
@@ -196,7 +197,8 @@ def vector_by_id(path_id: str):
     return vector
 
 
-def get_similar_projects_from_solr(accession_list):
+def get_similar_projects_from_solr(accessions_str):
+    accession_list = accessions_str.split(',')
     url = "https://www.ebi.ac.uk/pride/ws/archive/v2/projects/{accession}/similarProjects?pageSize=10"
     accession_title_counts = defaultdict(int)
 
@@ -389,7 +391,6 @@ def process_pride(data: dict):
     result = process_pride_projects(chat_query, llm_model)
     end_time = round(time.time() * 1000)
 
-    result = {k: v.strip() for k, v in result.items()}
     time_ms = end_time - start_time
 
     # insert the query & answer to database
@@ -442,7 +443,7 @@ def pride(data: dict):
 
 
 @app.post('/similar_projects')
-def pride(accessions: list):
+def pride(accessions: str):
     return get_similar_projects_from_solr(accessions)
 
 
