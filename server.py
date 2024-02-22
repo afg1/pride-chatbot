@@ -317,7 +317,8 @@ def get_similar_answers_pride(vector, query, model) -> str:
     ct = accession_string + " contains data " + context
 
     result = prompt.format(context=ct, question=query)
-    return result, accessions
+    accessions_delimited_by_comma = ','.join(accessions)
+    return result, accessions_delimited_by_comma
 
 
 # Processing chat requests
@@ -437,9 +438,6 @@ def chat(data: dict):
 @app.post('/pride')
 def pride(data: dict):
     return process_pride(data)
-
-
-
 
 
 @app.post('/similar_projects')
