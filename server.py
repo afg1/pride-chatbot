@@ -344,6 +344,8 @@ def process(prompt, model_name):
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
             completion = load_model.llm_chat(model_name, result, lltokenizer, llmodel, query)
+        elif model_name == 'Mixtral':
+            completion = load_model.llm_chat(model_name, result, mixtral_tokenizer, mixtral_model, query)
         else:
             completion = load_model.llm_chat(model_name, result, glmtokenizer, glmmodel, query)
     except Exception as e:
