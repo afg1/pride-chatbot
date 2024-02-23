@@ -91,8 +91,8 @@ def llm_model_init(choice: str, gpu: bool):
             bnb_4bit_use_double_quant=True,
         )
         model_4bit = AutoModelForCausalLM.from_pretrained(llama2_path, device_map="auto",
-                                                          quantization_config=quantization_config)
-        tokenizer = AutoTokenizer.from_pretrained(llama2_path, trust_remote_code=True,truncation=True)
+                                                          quantization_config=quantization_config, truncation=True)
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path, trust_remote_code=True, truncation=True)
         model = transformers.pipeline(
                     "text-generation",
                     model=model_4bit,
@@ -123,7 +123,7 @@ def llm_model_init(choice: str, gpu: bool):
             bnb_4bit_use_double_quant=True,
         )
         model_4bit = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",
-                                                          quantization_config=quantization_config)
+                                                          quantization_config=quantization_config, truncation=True)
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True,truncation=True)
         model = transformers.pipeline(
                     "text-generation",
@@ -158,7 +158,8 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
     elif choice == 'llama2-chat':  # chat with llama2-chat
         # inputs = tokenizer(prompt,return_tensors="pt").to("cuda:0")
         out = model(
-            prompt
+            prompt,
+            truncation=True
         )
         print(out)
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
@@ -169,7 +170,8 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
     elif choice == 'llama2-13b-chat' or choice == 'Mixtral':  # chat with llama2-chat
         # inputs = tokenizer(prompt,return_tensors="pt").to("cuda:0")
         out = model(
-            prompt
+            prompt,
+            truncation=True
         )
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
         # content_start = start_index + len("###Question:"+prompt) + 1
