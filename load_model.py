@@ -193,9 +193,4 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
         result = out[content_start:end_index].strip()
         if len(result) == 0:
             result = 'model error'
-    elif choice == "Mixtral":
-        out = model(
-            prompt
-        )
-        result = out[0]['generated_text'].replace(prompt, "", 1).strip()
     return result
