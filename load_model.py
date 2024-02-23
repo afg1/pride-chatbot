@@ -7,7 +7,7 @@ import torch.cuda as cuda
 import transformers
 import yaml
 from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM, \
-    AutoConfig  # tool for loading model from huggingface
+    AutoConfig, BitsAndBytesConfig  # tool for loading model from huggingface
 
 # Variables initialization
 os_name = platform.system()
@@ -101,8 +101,28 @@ def llm_model_init(choice: str, gpu: bool):
         return tokenizer, model
     elif choice == "Mixtral":
         model_path = cfg["llm"]["Mixtral"]
-        model = AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True, load_in_4bit=True,
-                                                     device_map="auto")
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
+        )
+        model_4bit = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",
+                                                          quantization_config=quantization_config)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True,)
+        model = transformers.pipeline(
+                    "text-generation",
+                    model=model_4bit,
+                    tokenizer=tokenizer,
+                    use_cache=True,
+                    device_map="auto",
+                    max_length=1024,
+                    do_sample=True,
+                    top_k=5,
+                    num_return_sequences=1,
+                    eos_token_id=tokenizer.eos_token_id,
+                    pad_token_id=tokenizer.eos_token_id,
+                )
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         return tokenizer, model
 
@@ -136,7 +156,7 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
         # end_index = out[0]['generated_text'].find("###", content_start)
         # result = out[0]['generated_text'][content_start:end_index].strip()
         result = out[0]['generated_text'].replace(prompt, "", 1).strip()
-    elif choice == 'llama2-13b-chat':  # chat with llama2-chat
+    elif choice == 'llama2-13b-chat' or choice == 'Mixtral':  # chat with llama2-chat
         # inputs = tokenizer(prompt,return_tensors="pt").to("cuda:0")
         out = model(
             prompt,
@@ -166,7 +186,7 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
         result = out[content_start:end_index].strip()
         if len(result) == 0:
             result = 'model error'
-    elif choice == "Mixtral":
+    elif choice == "Miyytral":
         messages = [
             {"role": "user",
              "content": """You should summerize the knowledge and provide concise answer
