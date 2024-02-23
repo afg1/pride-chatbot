@@ -109,14 +109,15 @@ def llm_model_init(choice: str, gpu: bool):
         )
         model_4bit = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",
                                                           quantization_config=quantization_config)
-        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True,)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True,truncation=True)
         model = transformers.pipeline(
                     "text-generation",
                     model=model_4bit,
                     tokenizer=tokenizer,
                     use_cache=True,
                     device_map="auto",
-                    max_length=1024,
+                    truncation=True,
+                    max_length=1200,
                     do_sample=True,
                     top_k=5,
                     num_return_sequences=1,
@@ -186,18 +187,9 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
         result = out[content_start:end_index].strip()
         if len(result) == 0:
             result = 'model error'
-    elif choice == "Miyytral":
-        messages = [
-            {"role": "user",
-             "content": """You should summerize the knowledge and provide concise answer
-            Please answer the questions according following Knowledge.
-            If you does not know the answer to a question, please say I don’t know."""},
-            {"role": "user", "content": query}
-        ]
-        input_ids = tokenizer.apply_chat_template(messages, return_tensors="pt").to("cuda")
-        outputs = model.generate(input_ids, max_new_tokens=1024)
-        result = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        last_inst_index = result.rfind("[/INST]")
-        if last_inst_index != -1:
-            result = result[:last_inst_index]
+    elif choice == "Mixtral":
+        out = model(
+            prompt
+        )
+        result = out[0]['generated_text'].replace(prompt, "", 1).strip()
     return result

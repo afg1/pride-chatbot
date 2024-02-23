@@ -233,6 +233,12 @@ def get_similar_answer(vector, vector_markdown, query, model) -> str:
              Question:{question}
              [/INST]</s>
         """
+    elif model == 'Mixtral':
+        prompt_template = """[INST] You are a helpful, respectful and honest assistant. Answer exactly in few words from the context
+        Answer the question below from the context below:
+        {context}
+        {question} [/INST] 
+        """
     else:
         prompt_template = """
             You are a helpful chatbot
@@ -285,16 +291,10 @@ def get_similar_answers_pride(vector, query, model) -> str:
              [/INST]</s>
         """
     elif model == 'Mixtral':
-        prompt_template = """
-            <s>[INST]
-            <<SYS>>
-             You should summarize the knowledge and provide concise answer
-            Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
-            If you does not know the answer to a question, please say I don’t know.
-            Knowledge:{context}
-            <</SYS>>
-             Question:{question}
-             [/INST]</s>
+        prompt_template = """[INST] You are a helpful, respectful and honest assistant. Answer exactly in few words from the context
+        Answer the question below from the context below:
+        {context}
+        {question} [/INST] 
         """
     else:
         prompt_template = """
@@ -425,7 +425,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 lltokenizer, llmodel = load_model.llm_model_init('llama2-13b-chat', True)
-glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
+#glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
 mixtral_tokenizer, mixtral_model = load_model.llm_model_init('Mixtral', True)
 
 # Pride-docs vector database
