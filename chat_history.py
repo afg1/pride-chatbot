@@ -1,3 +1,4 @@
+import os
 import shutil
 
 from peewee import *
@@ -53,7 +54,10 @@ def append_to_backup():
         shutil.copyfileobj(src, dest)
 
 
-append_to_backup()
+if os.path.exists('chatbot.db'):
+    append_to_backup()
+else:
+    print("chatbot.db file not found, backup not created.")
 db.connect()
 db.create_tables([ChatHistory])
 db.create_tables([ChatBenchmark])
