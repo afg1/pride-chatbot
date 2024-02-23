@@ -84,14 +84,29 @@ def llm_model_init(choice: str, gpu: bool):
         return tokenizer, model
     elif choice == 'llama2-13b-chat':  # llama2-7b-chat
         llama2_path = cfg['llm']['llama2-13b-chat']
-        tokenizer = AutoTokenizer.from_pretrained(llama2_path, trust_remote_code=True, model_max_length=4096)
-        model = transformers.pipeline(
-            "text-generation",
-            model=llama2_path,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            trust_remote_code=True
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_use_double_quant=True,
         )
+        model_4bit = AutoModelForCausalLM.from_pretrained(llama2_path, device_map="auto",
+                                                          quantization_config=quantization_config)
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path, trust_remote_code=True,truncation=True)
+        model = transformers.pipeline(
+                    "text-generation",
+                    model=model_4bit,
+                    tokenizer=tokenizer,
+                    use_cache=True,
+                    device_map="auto",
+                    truncation=True,
+                    max_length=1200,
+                    do_sample=True,
+                    top_k=5,
+                    num_return_sequences=1,
+                    eos_token_id=tokenizer.eos_token_id,
+                    pad_token_id=tokenizer.eos_token_id,
+                )
         return tokenizer, model
     elif choice == 'GPT4ALL':  # llama2-7b-chat
         model = gpt4all.GPT4All(
@@ -124,7 +139,6 @@ def llm_model_init(choice: str, gpu: bool):
                     eos_token_id=tokenizer.eos_token_id,
                     pad_token_id=tokenizer.eos_token_id,
                 )
-        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True)
         return tokenizer, model
 
 
@@ -144,12 +158,7 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
     elif choice == 'llama2-chat':  # chat with llama2-chat
         # inputs = tokenizer(prompt,return_tensors="pt").to("cuda:0")
         out = model(
-            prompt,
-            do_sample=True,
-            top_k=1,
-            num_return_sequences=1,
-            eos_token_id=tokenizer.eos_token_id,
-            max_length=1200,
+            prompt
         )
         print(out)
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
@@ -160,12 +169,7 @@ def llm_chat(choice: str, prompt: str, tokenizer, model, query: str):
     elif choice == 'llama2-13b-chat' or choice == 'Mixtral':  # chat with llama2-chat
         # inputs = tokenizer(prompt,return_tensors="pt").to("cuda:0")
         out = model(
-            prompt,
-            do_sample=True,
-            top_k=1,
-            num_return_sequences=1,
-            eos_token_id=tokenizer.eos_token_id,
-            max_length=2200,
+            prompt
         )
         # start_index = out[0]['generated_text'].find("###Questio:"+prompt)
         # content_start = start_index + len("###Question:"+prompt) + 1
