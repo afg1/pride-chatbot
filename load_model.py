@@ -91,8 +91,8 @@ def llm_model_init(choice: str, gpu: bool):
             bnb_4bit_use_double_quant=True,
         )
         model_4bit = AutoModelForCausalLM.from_pretrained(llama2_path, device_map="auto",
-                                                          quantization_config=quantization_config, truncation=True)
-        tokenizer = AutoTokenizer.from_pretrained(llama2_path, trust_remote_code=True, truncation=True)
+                                                          quantization_config=quantization_config)
+        tokenizer = AutoTokenizer.from_pretrained(llama2_path, trust_remote_code=True, truncation=True, model_max_length=4096)
         model = transformers.pipeline(
                     "text-generation",
                     model=model_4bit,
@@ -123,8 +123,9 @@ def llm_model_init(choice: str, gpu: bool):
             bnb_4bit_use_double_quant=True,
         )
         model_4bit = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",
-                                                          quantization_config=quantization_config, truncation=True)
-        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True,truncation=True)
+                                                          quantization_config=quantization_config)
+        tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True,truncation=True,
+                                                  model_max_length=4096)
         model = transformers.pipeline(
                     "text-generation",
                     model=model_4bit,
