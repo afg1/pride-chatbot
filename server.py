@@ -272,7 +272,19 @@ def get_similar_answer(vector, vector_markdown, query, model) -> str:
 # Search for relevant content in the vector based on the query and build a prompt
 def get_similar_answers_pride(vector, query, model) -> str:
     # prompt template, you can add external strings to { }
-    if model == 'llama2-chat' or model == 'llama2-13b-chat':
+    if model == 'llama2-13b-chat':
+        prompt_template = """
+            <s>[INST]
+            <<SYS>>
+             You should summarize the knowledge and provide concise answer
+            Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
+            If you does not know the answer to a question, please say I don’t know.
+            Knowledge:{context}
+            <</SYS>>
+             Question:{question}
+             [/INST]</s>
+        """
+    elif model == 'Mixtral':
         prompt_template = """
             <s>[INST]
             <<SYS>>
