@@ -276,7 +276,7 @@ def get_similar_answers_pride(vector, query, model) -> str:
         prompt_template = """
             <s>[INST]
             <<SYS>>
-             You should summerize the knowledge and provide concise answer
+             You should summarize the knowledge and provide concise answer
             Please answer the questions according following Knowledge, and please convert the language of the generated answer to the same language as the user.
             If you does not know the answer to a question, please say I don’t know.
             Knowledge:{context}
@@ -287,7 +287,7 @@ def get_similar_answers_pride(vector, query, model) -> str:
     else:
         prompt_template = """
             You are a helpful chatbot
-            Please answer the questions according following Knowledge with markwown format
+            Please answer the questions according following Knowledge with markdown format
             Knowledge:{context}
             Question:{question}
         """
@@ -352,8 +352,9 @@ def process_pride_projects(prompt, model_name):
         # tokenizer, model = load_model.llm_model_init(model_name, True)
         if model_name == 'llama2-13b-chat':
             completion = load_model.llm_chat(model_name, result, lltokenizer, llmodel, query)
+        elif model_name == 'Mixtral':
+            completion = load_model.llm_chat(model_name, result, mixtral_tokenizer, mixtral_model, query)
         else:
-            glmtokenizer, glmmodel = load_model.llm_model_init(model_name, True)
             completion = load_model.llm_chat(model_name, result, glmtokenizer, glmmodel, query)
     except Exception as e:
         print(e)
@@ -413,6 +414,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 lltokenizer, llmodel = load_model.llm_model_init('llama2-13b-chat', True)
 glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
+mixtral_tokenizer, mixtral_model = load_model.llm_model_init('Mixtral', True)
 
 # Pride-docs vector database
 db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad370")
