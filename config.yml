@@ -7,6 +7,7 @@ llm:
     mpt-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/mpt-7b-chat
     llama2-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Llama-2-7b-chat-hf
     llama2-13b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Llama-2-13b-chat-hf
+    Mixtral: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Mixtral-8x7B-Instruct-v0.1
     gpu: True
     embedding: all-MiniLM-L6-v2
     model_type: bert

@@ -104,6 +104,11 @@ def llm_model_init(choice: str, gpu: bool) :
         model = gpt4all.GPT4All(model_path='/hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/', model_name='ggml-gpt4all-j-v1.3-groovy.bin')
         tokenizer = None
         return tokenizer,model
+    elif choice == "Mixtral":
+        model_path = cfg["llm"]["Mixtral"]
+        model =  AutoModelForCausalLM.from_pretrained(model_path, trust_remote_code=True,load_in_4bit=True, device_map="auto")
+        tokenizer = AutoTokenizer.from_pretrained(model_path,trust_remote_code=True)
+        return tokenizer,model
 #chat with model    
 def llm_chat(choice:str,prompt:str,tokenizer,model,query:str):
     if choice =='chatglm2-6b': #chat with ChatGLM
@@ -163,4 +168,18 @@ def llm_chat(choice:str,prompt:str,tokenizer,model,query:str):
         result = out[content_start:end_index].strip()
         if len (result)==0:
             result = 'model error'
+    elif choice == "Mixtral":
+        messages = [
+            {"role": "user",
+             "content": """You should summerize the knowledge and provide concise answer
+            Please answer the questions according following Knowledge.
+            If you does not know the answer to a question, please say I don’t know.""" },
+            {"role": "user", "content": query}
+        ]
+        input_ids = tokenizer.apply_chat_template(messages, return_tensors="pt").to("cuda")
+        outputs = model.generate(input_ids, max_new_tokens=1024)
+        result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        last_inst_index = result.rfind("[/INST]")
+        if last_inst_index != -1:
+            result = result[:last_inst_index]
     return result

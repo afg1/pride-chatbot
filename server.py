@@ -353,6 +353,7 @@ def process_pride_projects(prompt, model_name):
         if model_name == 'llama2-13b-chat':
             completion = load_model.llm_chat(model_name, result, lltokenizer, llmodel, query)
         else:
+            glmtokenizer, glmmodel = load_model.llm_model_init(model_name, True)
             completion = load_model.llm_chat(model_name, result, glmtokenizer, glmmodel, query)
     except Exception as e:
         print(e)
