@@ -8,6 +8,7 @@ import time
 import uuid
 import zipfile
 from collections import defaultdict
+from http.client import HTTPException
 from queue import Queue
 from urllib.parse import urlparse
 
@@ -22,7 +23,7 @@ from langchain.docstore.document import Document
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.prompts import PromptTemplate
 from langchain.vectorstores import Chroma
-from peewee import fn
+from peewee import fn, Query
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -427,7 +428,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 lltokenizer, llmodel = load_model.llm_model_init('llama2-13b-chat', True)
-#glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
+# glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
 mixtral_tokenizer, mixtral_model = load_model.llm_model_init('Mixtral', True)
 
 # Pride-docs vector database
@@ -445,6 +446,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+iterations = {
+    1: "1stIteration.json",
+    2: "2nd-iteration.json",
+    3: "3rdIteration.json",
+    4: "4thIteration.json",
+}
 
 
 @app.post('/chat')
@@ -505,7 +513,14 @@ def savebenchmark(data: dict):
 
 
 @app.get('/getBenchmark')
-def getbenchmark(page_num: int = 0, items_per_page: int = 100):
+def getbenchmark(page_num: int = 0, items_per_page: int = 100, iteration: int = 4):
+    if iteration not in iterations:
+        raise HTTPException(status_code=404, detail="Iteration not found")
+
+    # Return the requested JSON file
+    if iteration < 4:
+        return FileResponse(iterations[iteration])
+
     sql_results = ChatBenchmark.select(ChatBenchmark.query, ChatBenchmark.model_a, ChatBenchmark.model_b,
                                        ChatBenchmark.answer_a, ChatBenchmark.answer_b,
                                        ChatBenchmark.time_a, ChatBenchmark.time_b,
@@ -514,18 +529,19 @@ def getbenchmark(page_num: int = 0, items_per_page: int = 100):
 
     results = []
     for row in sql_results:
-        result_dict = {
-            'query': row.query,
-            'model_a': row.model_a,
-            'answer_a': row.answer_a,
-            'model_b': row.model_b,
-            'answer_b': row.answer_b,
-            'time_a': row.time_a,
-            'time_b': row.time_b,
-            'winner': row.winner,
-            'judge': row.judge
-        }
-        results.append(result_dict)
+        if row.query != 'test':
+            result_dict = {
+                'query': row.query,
+                'model_a': row.model_a,
+                'answer_a': row.answer_a,
+                'model_b': row.model_b,
+                'answer_b': row.answer_b,
+                'time_a': row.time_a,
+                'time_b': row.time_b,
+                'winner': row.winner,
+                'judge': row.judge
+            }
+            results.append(result_dict)
 
     return results
 

@@ -15,15 +15,15 @@ UPLOAD_FOLDER = './documents/user_upload'
 def create_and_save(file_path:str):
     file_id = str(uuid.uuid4())
     save_path = "./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-    embeddings = HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2")
+    embeddings = HuggingFaceEmbeddings(model_name="all-mpnet-base-v2")
     docs = import_file(file_path)
-    Vector= Chroma.from_documents(
-        documents=docs,
-        embedding=embeddings,
-        persist_directory=save_path
-    )
-    Vector.id = "d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-    return Vector
+    # Vector= Chroma.from_documents(
+    #     documents=docs,
+    #     embedding=embeddings,
+    #     persist_directory=save_path
+    # )
+    # Vector.id = "d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
+    #return Vector
 
 # import all markdown files in the folder and then do the segmentation
 def import_file(data_folder: str) -> list:
@@ -49,7 +49,7 @@ def import_file(data_folder: str) -> list:
                 if len(docs) != 0:
                     db = Chroma.from_documents(
                         documents=docs,
-                        embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
+                        embedding=HuggingFaceEmbeddings(model_name='all-mpnet-base-v2'),
                         persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
                     )
                     db.persist()

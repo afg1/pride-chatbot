@@ -2,7 +2,7 @@ import requests
 import json
 
 # URL to fetch JSON data from
-url = "http://codon-gpu-015.ebi.ac.uk:6008/getBenchmark?page_num=0&items_per_page=200"
+url = "http://codon-gpu-016.ebi.ac.uk:6008/getBenchmark?page_num=0&items_per_page=200"
 
 try:
     # Send an HTTP GET request to the URL
@@ -14,7 +14,7 @@ try:
         data = response.json()
 
         # Specify the filename to save the JSON data
-        filename = "3rdIteration.json"
+        filename = "4thIteration.json"
 
         # Save the JSON data to a file
         with open(filename, 'w') as file:
