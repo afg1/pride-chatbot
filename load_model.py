@@ -53,7 +53,7 @@ def llm_model_init(choice: str, gpu: bool):
         model_4bit = AutoModelForCausalLM.from_pretrained(model_path, device_map="auto",
                                                           quantization_config=quantization_config)
         tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=True, truncation=True,
-                                                  model_max_length=1024)
+                                                  model_max_length=2200)
         model = transformers.pipeline(
             "text-generation",
             model=model_4bit,
@@ -61,7 +61,7 @@ def llm_model_init(choice: str, gpu: bool):
             use_cache=True,
             device_map="auto",
             truncation=True,
-            max_length=1200,
+            max_length=2200,
             do_sample=True,
             top_k=5,
             num_return_sequences=1,
