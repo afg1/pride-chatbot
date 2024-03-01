@@ -550,7 +550,7 @@ def getbenchmark(page_num: int = 0, items_per_page: int = 100, iteration: int = 
     return results
 
 
-@app.post('/saveQueryFeedBack')
+@app.post('/saveQueryFeedback')
 def save_projects_query_feedback(data: dict):
     # insert the query & answer to database
     QueryFeedBack.create(query=data['query'],
@@ -562,7 +562,7 @@ def save_projects_query_feedback(data: dict):
                          )
 
 
-@app.get('/getQueryFeedBack')
+@app.get('/getQueryFeedback')
 def get_projects_query_feedback(page_num: int = 0, items_per_page: int = 100):
     sql_results = QueryFeedBack.select(QueryFeedBack.query, QueryFeedBack.answer, QueryFeedBack.model,
                                        QueryFeedBack.time_ms, QueryFeedBack.source,
