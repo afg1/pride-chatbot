@@ -184,7 +184,7 @@ def find_source(docs) -> list:
 def vector_by_id(path_id: str):
     directory = "./vector/" + path_id
     vector = Chroma(persist_directory=directory,
-                    embedding_function=HuggingFaceEmbeddings(model_name='all-mpnet-base-v2'))
+                    embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     data = vector.get()['metadatas']
     unique_data = []
     seen = set()
@@ -615,14 +615,14 @@ async def upload(files: UploadFile = File(...)):
     if len(doc1) != 0:
         db = Chroma.from_documents(
             documents=doc1,
-            embedding=HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"),
+            embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
             persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
         )
         db.persist()
         db = None
         db_markdown = Chroma.from_documents(
             documents=doc2,
-            embedding=HuggingFaceEmbeddings(model_name="all-mpnet-base-v2"),
+            embedding=HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2"),
             persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad369"
         )
         db_markdown.persist()
