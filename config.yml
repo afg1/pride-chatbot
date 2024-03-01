@@ -1,5 +1,6 @@
 llm:
     chatglm2: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/chatglm2-6b
+    chatglm3: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/chatglm3-6b
     GPT4ALL_PATH: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models
     GPTEALL_MODEL: ggml-gpt4all-j-v1.3-groovy.bin
     Vicuna-13B: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/vicuna-13b-v1.3
@@ -7,7 +8,8 @@ llm:
     mpt-7b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/mpt-7b-chat
     llama2-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Llama-2-7b-chat-hf
     llama2-13b-chat: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Llama-2-13b-chat-hf
-    Mixtral: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Mistral-7B-Instruct-v0.1
+    Mixtral: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/Mistral-7B-Instruct-v0.2
+    open-hermes: /hps/nobackup/juan/pride/chatbot/pride-prd-chatbot/pride-new-chatbot/models/OpenHermes-2.5-Mistral-7B
     gpu: True
     embedding: all-MiniLM-L6-v2
     model_type: bert

@@ -234,7 +234,7 @@ def get_similar_answer(vector, vector_markdown, query, model) -> str:
              Question:{question}
              [/INST]</s>
         """
-    elif model == 'Mixtral':
+    elif model == 'Mixtral' or model == 'open-hermes':
         prompt_template = """[INST] You are a helpful, respectful and honest assistant. Answer exactly in few words from the context
         Answer the question below from the context below:
         {context}
@@ -291,7 +291,7 @@ def get_similar_answers_pride(vector, query, model) -> str:
              Question:{question}
              [/INST]</s>
         """
-    elif model == 'Mixtral':
+    elif model == 'Mixtral' or model == 'open-hermes':
         prompt_template = """[INST] You are a helpful, respectful and honest assistant. Answer exactly in few words from the context
         Answer the question below from the context below:
         {context}
@@ -347,6 +347,8 @@ def process(prompt, model_name):
             completion = load_model.llm_chat(model_name, result, lltokenizer, llmodel, query)
         elif model_name == 'Mixtral':
             completion = load_model.llm_chat(model_name, result, mixtral_tokenizer, mixtral_model, query)
+        elif model_name == 'open-hermes':
+            completion = load_model.llm_chat(model_name, result, open_hermes_tokenizer, open_hermes_model, query)
         else:
             completion = load_model.llm_chat(model_name, result, glmtokenizer, glmmodel, query)
     except Exception as e:
@@ -369,6 +371,8 @@ def process_pride_projects(prompt, model_name):
             completion = load_model.llm_chat(model_name, result, lltokenizer, llmodel, query)
         elif model_name == 'Mixtral':
             completion = load_model.llm_chat(model_name, result, mixtral_tokenizer, mixtral_model, query)
+        elif model_name == 'open-hermes':
+            completion = load_model.llm_chat(model_name, result, open_hermes_tokenizer, open_hermes_model, query)
         else:
             completion = load_model.llm_chat(model_name, result, glmtokenizer, glmmodel, query)
     except Exception as e:
@@ -428,8 +432,9 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 lltokenizer, llmodel = load_model.llm_model_init('llama2-13b-chat', True)
-# glmtokenizer, glmmodel = load_model.llm_model_init('chatglm2-6b', True)
+glmtokenizer, glmmodel = load_model.llm_model_init('chatglm3-6b', True)
 mixtral_tokenizer, mixtral_model = load_model.llm_model_init('Mixtral', True)
+open_hermes_tokenizer, open_hermes_model = load_model.llm_model_init('open-hermes', True)
 
 # Pride-docs vector database
 db = vector_by_id("d4a1cccb-a9ae-43d1-8f1f-9919c90ad370")
