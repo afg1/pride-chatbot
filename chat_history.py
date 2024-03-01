@@ -32,10 +32,13 @@ class ChatBenchmark(BaseModel):
     judge = TextField()
 
 
-class ProjectsQueryFeedBack(BaseModel):
+class QueryFeedBack(BaseModel):
     id = AutoField(primary_key=True)
     query = TextField()
     answer = TextField()
+    model = TextField()
+    source = TextField()
+    time_ms = IntegerField()
     feedback = TextField()
 
 
@@ -61,5 +64,5 @@ else:
 db.connect()
 db.create_tables([ChatHistory])
 db.create_tables([ChatBenchmark])
-db.create_tables([ProjectsQueryFeedBack])
+db.create_tables([QueryFeedBack])
 db.create_tables([ProjectsSearchHistory])

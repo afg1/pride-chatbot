@@ -31,7 +31,7 @@ from slowapi.util import get_remote_address
 import load_model
 from chat_history import ChatBenchmark, ProjectsSearchHistory
 from chat_history import ChatHistory
-from chat_history import ProjectsQueryFeedBack
+from chat_history import QueryFeedBack
 
 # global variables
 os.environ["TOKENIZERS_PARALLELISM"] = "ture"  # Load the environment variables required by the local model
@@ -518,13 +518,12 @@ def savebenchmark(data: dict):
 
 
 @app.get('/getBenchmark')
-def getbenchmark(page_num: int = 0, items_per_page: int = 100, iteration: int = 4):
-    if iteration not in iterations:
-        raise HTTPException(status_code=404, detail="Iteration not found")
-
+def getbenchmark(page_num: int = 0, items_per_page: int = 100, iteration: int = 5):
     # Return the requested JSON file
-    if iteration < 4:
+    if iteration < 5:
         return FileResponse(iterations[iteration])
+    elif iteration > 5:
+        return '[]'
 
     sql_results = ChatBenchmark.select(ChatBenchmark.query, ChatBenchmark.model_a, ChatBenchmark.model_b,
                                        ChatBenchmark.answer_a, ChatBenchmark.answer_b,
@@ -551,18 +550,18 @@ def getbenchmark(page_num: int = 0, items_per_page: int = 100, iteration: int = 
     return results
 
 
-@app.post('/saveProjectsQueryFeedback')
+@app.post('/saveQueryFeedBack')
 def save_projects_query_feedback(data: dict):
     # insert the query & answer to database
-    ProjectsQueryFeedBack.create(query=data['query'],
+    QueryFeedBack.create(query=data['query'],
                                  answer=data['answer'],
                                  feedback=data['feedback'])
 
 
-@app.get('/getProjectsQueryFeedback')
+@app.get('/getQueryFeedBack')
 def get_projects_query_feedback(page_num: int = 0, items_per_page: int = 100):
-    sql_results = ProjectsQueryFeedBack.select(ProjectsQueryFeedBack.query, ProjectsQueryFeedBack.answer,
-                                               ProjectsQueryFeedBack.feedback) \
+    sql_results = QueryFeedBack.select(QueryFeedBack.query, QueryFeedBack.answer,
+                                               QueryFeedBack.feedback) \
         .paginate(page_num, items_per_page)
 
     results = []
@@ -570,6 +569,9 @@ def get_projects_query_feedback(page_num: int = 0, items_per_page: int = 100):
         result_dict = {
             'query': row.query,
             'answer': row.answer,
+            'model': row.model,
+            'time_ms': row.time_ms,
+            'source': row.source,
             'feedback': row.feedback
         }
         results.append(result_dict)

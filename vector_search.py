@@ -8,7 +8,7 @@ from langchain.vectorstores import Chroma
 def vector_by_id(path_id: str):
     directory = "./vector/" + path_id
     vector = Chroma(persist_directory=directory,
-                    embedding_function=HuggingFaceEmbeddings(model_name='all-mpnet-base-v2'))
+                    embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     data = vector.get()['metadatas']
     unique_data = []
     seen = set()
@@ -50,6 +50,6 @@ if __name__ == '__main__':
 
     ve = vector_by_id('d4a1cccb-a9ae-43d1-8f1f-9919c90ad370')
     a = 'Are there any metabolomics data in PRIDE?'
-    for d in ve.similarity_search_with_score(a.replace("PRIDE", ""), k=3):
+    for d in ve.similarity_search_with_score(a, k=3):
         print(d)
         print('\n----------------------------------------------\n')

@@ -15,7 +15,7 @@ UPLOAD_FOLDER = './documents/user_upload'
 def create_and_save(file_path:str):
     file_id = str(uuid.uuid4())
     save_path = "./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
-    embeddings = HuggingFaceEmbeddings(model_name="all-mpnet-base-v2")
+    embeddings = HuggingFaceEmbeddings(model_name="paraphrase-MiniLM-L6-v2")
     docs = import_file(file_path)
     # Vector= Chroma.from_documents(
     #     documents=docs,
@@ -36,20 +36,23 @@ def import_file(data_folder: str) -> list:
                 sections = extract_sections(content=content)
                 parent_directory = os.path.dirname(fullPath)
                 directory_name = os.path.basename(parent_directory)
+                id_folder = str(uuid.uuid4())
                 for section in sections:
+                    id = str(uuid.uuid4())
                     title = extract_title(content=section)
                     html = markdown.markdown(section)
                     soup = BeautifulSoup(html, 'html.parser')
                     new_doc = Document(
                         page_content=soup.get_text(),
-                        metadata={'source': UPLOAD_FOLDER + '/' + directory_name + '/' +filename,
+                        metadata={'source': UPLOAD_FOLDER + '/' + id_folder + '/' +filename,
                                   'title': "http://www.ebi.ac.uk/pride/markdownpage/" + directory_name + '#' + title,
+                                  'id': id
                                   })
                     docs.append(new_doc)
                 if len(docs) != 0:
                     db = Chroma.from_documents(
                         documents=docs,
-                        embedding=HuggingFaceEmbeddings(model_name='all-mpnet-base-v2'),
+                        embedding=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'),
                         persist_directory="./vector/d4a1cccb-a9ae-43d1-8f1f-9919c90ad370"
                     )
                     db.persist()
