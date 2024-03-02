@@ -557,7 +557,7 @@ def save_projects_query_feedback(data: dict):
                          answer=data['answer'],
                          model=data['model'],
                          source=data['source'],
-                         time_ms=data['time-ms'],
+                         time_ms=data['time_ms'],
                          feedback=data['feedback'],
                          )
 
