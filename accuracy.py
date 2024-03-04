@@ -5,6 +5,7 @@ import json
 
 from transformers import BertTokenizer, BertModel
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 
 # Open the Google Spreadsheet using its title
 gs = gspread.service_account()
@@ -115,12 +116,12 @@ def calculate_accuracy(mode1_responses, gold_standard):
     for text in mode1_responses:
         inputs = tokenizer(text, return_tensors='pt', max_length=2200, truncation=True)
         outputs = model(**inputs)
-        embeddings_array1.append(outputs.pooler_output.detach().numpy())
+        embeddings_array1.append(outputs.pooler_output.detach().numpy().flatten())
 
     for text in gold_standard:
         inputs = tokenizer(text, return_tensors='pt', max_length=2200, truncation=True)
         outputs = model(**inputs)
-        embeddings_array2.append(outputs.pooler_output.detach().numpy())
+        embeddings_array2.append(outputs.pooler_output.detach().numpy().flatten())
 
     # Calculate cosine similarity
     similarity_scores = []
