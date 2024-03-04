@@ -99,7 +99,6 @@ for index, row in df.iterrows():
     if row['model-name'] == "llama2-13b-chat":
         response_llama2.append(row['response'])
 
-
 # Evaluate accuracy for each model
 
 
@@ -112,20 +111,20 @@ embeddings_array1 = []
 embeddings_array2 = []
 
 
-def calculate_accuracy(mode1_responses, gold_standard):
-    for text in mode1_responses:
-        inputs = tokenizer(text, return_tensors='pt', max_length=2200, truncation=True)
+def calculate_accuracy(model_responses, gold_standard):
+    for text in model_responses:
+        inputs = tokenizer(text, return_tensors='pt', truncation=True)
         outputs = model(**inputs)
         embeddings_array1.append(outputs.pooler_output.detach().numpy().flatten())
 
     for text in gold_standard:
-        inputs = tokenizer(text, return_tensors='pt', max_length=2200, truncation=True)
+        inputs = tokenizer(text, return_tensors='pt', truncation=True)
         outputs = model(**inputs)
         embeddings_array2.append(outputs.pooler_output.detach().numpy().flatten())
 
     # Calculate cosine similarity
     similarity_scores = []
-    for i in range(len(mode1_responses)):
+    for i in range(len(embeddings_array2)):
         similarity_score = cosine_similarity([embeddings_array1[i]], [embeddings_array2[i]])[0][0]
         similarity_scores.append(similarity_score)
 
@@ -138,7 +137,7 @@ accuracy_model3 = calculate_accuracy(response_mixtral, gold_standard_answers)
 accuracy_model4 = calculate_accuracy(response_llama2, gold_standard_answers)
 
 # Print individual accuracy scores
-print(f"Model 1 Accuracy: {accuracy_model1:.4f}")
-print(f"Model 2 Accuracy: {accuracy_model2:.4f}")
-print(f"Model 3 Accuracy: {accuracy_model3:.4f}")
-print(f"Model 4 Accuracy: {accuracy_model4:.4f}")
+print(f"Chatglm Accuracy: {accuracy_model1:.2f}")
+print(f"OpenHermes Accuracy: {accuracy_model2:.2f}")
+print(f"Mixtral Accuracy: {accuracy_model3:.2f}")
+print(f"Llama2 Accuracy: {accuracy_model4:.2f}")
