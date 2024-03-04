@@ -4,7 +4,7 @@ import pandas as pd
 
 pd.options.display.float_format = '{:.2f}'.format
 
-filename = "3rdIteration.json"
+filename = "../resources/3rdIteration.json"
 raw_data = pd.read_json(filename)
 raw_data = raw_data[raw_data.model_b != 'string']
 raw_data = raw_data[raw_data.model_a != "string"]

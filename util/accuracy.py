@@ -5,11 +5,11 @@ import json
 
 from transformers import BertTokenizer, BertModel
 from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
 
 # Open the Google Spreadsheet using its title
 gs = gspread.service_account()
-spreadsheet = gs.open_by_url('https://docs.google.com/spreadsheets/d/1LBRvDGUL5LrybuNu1EXfeaT8dg17pwTRfq28wtukkVc/edit?usp=sharing')  # Replace with the URL of your Google Sheet
+spreadsheet = gs.open_by_url(
+    'https://docs.google.com/spreadsheets/d/1LBRvDGUL5LrybuNu1EXfeaT8dg17pwTRfq28wtukkVc/edit?usp=sharing')  # Replace with the URL of your Google Sheet
 
 # Select the first sheet
 worksheet = spreadsheet.get_worksheet(0)
@@ -23,7 +23,7 @@ df = pd.DataFrame(data)
 # Extract questions and gold standard answers
 gold_standard_questions = df['Question'].tolist()
 gold_standard_answers = df['Answer'].tolist()
-#["llama2-13b-chat", "chatglm3-6b", "open-hermes", "Mixtral"]
+# ["llama2-13b-chat", "chatglm3-6b", "open-hermes", "Mixtral"]
 model_names = []
 
 # Set the URL
@@ -41,7 +41,7 @@ headers = {
 # List to store responses
 responses = []
 
-output_file_path = 'responses.csv'
+output_file_path = '../resources/responses.csv'
 
 # Iterate over model names
 for model_name in model_names:
@@ -68,7 +68,6 @@ for model_name in model_names:
         # Append the response to the list
         responses.append((model_name, question, result, time_ms))
 
-
 # Print the stored responses
 for i, (model_name, question, response, time_ms) in enumerate(responses, start=1):
     print(f"Response {i} in {time_ms} for Model {model_name}  and Question '{question}': {response}")
@@ -87,7 +86,6 @@ response_chatglm = []
 response_openhermes = []
 response_mixtral = []
 response_llama2 = []
-
 
 for index, row in df.iterrows():
     if row['model-name'] == "chatglm3-6b":
@@ -128,7 +126,7 @@ def calculate_accuracy(model_responses, gold_standard):
         similarity_score = cosine_similarity([embeddings_array1[i]], [embeddings_array2[i]])[0][0]
         similarity_scores.append(similarity_score)
 
-    return sum(similarity_scores)/len(similarity_scores)
+    return sum(similarity_scores) / len(similarity_scores)
 
 
 accuracy_model1 = calculate_accuracy(response_chatglm, gold_standard_answers)

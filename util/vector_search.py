@@ -6,7 +6,7 @@ from langchain.vectorstores import Chroma
 
 
 def vector_by_id(path_id: str):
-    directory = "./vector/" + path_id
+    directory = "../vector/" + path_id
     vector = Chroma(persist_directory=directory,
                     embedding_function=HuggingFaceEmbeddings(model_name='paraphrase-MiniLM-L6-v2'))
     data = vector.get()['metadatas']
