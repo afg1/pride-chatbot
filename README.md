@@ -18,12 +18,12 @@ git lfs install
 cd /root/autodl-tmp
 ```
 
-### Step3  Donwload the LLMs
+### Step3  Download the LLMs
 
 #### Llama2:
 - First, You should apply for a permission on [Huggingface](https://huggingface.co/meta-llama/Llama-2-7b-chat-hf/tree/main) and [Meta](https://ai.meta.com/resources/models-and-libraries/llama-downloads/)
 
-- Second, followring the steps below:
+- Second, following the steps below:
 ```shell
 # Login huggingface
 huggingface-cli login
@@ -32,36 +32,32 @@ huggingface-cli login
 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
 
 # Download the llama2 model
-git clone https://huggingface.co/meta-llama/Llama-2-7b-chat-hf
+git clone https://huggingface.co/meta-llama/Llama-2-13b-chat-hf
 ```
 #### Other LLMs
 For the other LLMs, we do not need token verification. We could download them directly.
 
 ```shell
-#chatglm2-6b
-git clone https://huggingface.co/THUDM/chatglm2-6b
+#chatglm3-6b
+git clone https://huggingface.co/THUDM/chatglm3-6b
 
-#Baichuan
-git clone https://huggingface.co/baichuan-inc/Baichuan-7B
+#Mistral-7B-Instruct-v0.2
+git clone https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2
 
-#GPT4ALL
-wget https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin
+#OpenHermes-2.5-Mistral-7B
+git clone https://huggingface.co/teknium/OpenHermes-2.5-Mistral-7B
 
-# Vicuna
-git clone https://huggingface.co/lmsys/vicuna-13b-v1.3
 
-# mpt-7b-chat
-git clone https://huggingface.co/mosaicml/mpt-7b-chat
 ```
 
-### Step4  Donwload the Embedding Model (Sentence Transformers)
+### Step4  Download the Embedding Model (Sentence Transformers)
 ```shell
 
 # Change the path from the folder `/root/autodl-tmp` saving LLMs to the folder `pride-chat-bot` for the project
 cd pride-chat-bot
 
-# Then download the sentence tranformers
-git clone https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+# Then download the sentence transformers
+git clone https://huggingface.co/sentence-transformers/paraphrase-MiniLM-L6-v2
 ```
 
 ### Step5 Install the requiremient
@@ -72,18 +68,11 @@ pip install -r requirements.txt
 ### Step6 LLMs Config
 If you download the LLMs in a specific folder, you could update `config.yaml` config file accordingly.
 ```
-# Two paths config for GPT4 ALL
-# Path for saving model
-GPT4ALL_PATH: /root/autodl-tmp
-# Name of model file
-GPTEALL_MODEL: ggml-gpt4all-j-v1.3-groovy.bin
-
 # The other LLMs
-chatglm2: /root/autodl-tmp/chatglm2-6b
-Vicuna-13B: /root/autodl-tmp/vicuna-13b-v1.3
-baichuan-7b: /root/autodl-tmp/Baichuan-7B
-mpt-7b-chat: /root/autodl-tmp/mpt-7b-chat
-llama2-chat: /root/autodl-tmp/Llama-2-7b-chat-hf
+chatglm3: /root/autodl-tmp/chatglm3-6b
+Mistral-7B-Instruct-v0.2: /root/autodl-tmp/Mistral-7B-Instruct-v0.2
+OpenHermes-2.5-Mistral-7B: /root/autodl-tmp/OpenHermes-2.5-Mistral-7B
+llama2-chat: /root/autodl-tmp/Llama-2-13b-chat-hf
 ```
 
 ### Step7 Start Server
